@@ -40,7 +40,24 @@ namespace
         close(STDIN_FILENO);
         close(STDOUT_FILENO);
         close(STDERR_FILENO);
-    } 
+    }
+
+    bool redirectFd()
+    {
+        int dev_null = open("/dev/null", O_RDWR);
+        if (dev_null < 0)
+            return false;
+        if (dup2(dev_null, STDIN_FILENO) < 0 ||
+            dup2(dev_null, STDOUT_FILENO) < 0 ||
+            dup2(dev_null, STDERR_FILENO) < 0)
+        {
+            close(dev_null);
+            return false;
+        }
+        if (dev_null > STDERR_FILENO)
+            close(dev_null);
+        return true;
+    }
 }
 
 bool Daemonize::daemonize(TintinReporter& logger)
@@ -73,7 +90,7 @@ bool Daemonize::daemonize(TintinReporter& logger)
     logger.log(TintinReporter::LogLevel::Info, "File creation mask reset");
     closeFd();
     logger.log(TintinReporter::LogLevel::Info, "File descriptors closed");
-    if(!redirectFd(logger))
+    if(!redirectFd())
     {
         logger.log(TintinReporter::LogLevel::Error, "Failed to redirect standard FDs");
         return false;
