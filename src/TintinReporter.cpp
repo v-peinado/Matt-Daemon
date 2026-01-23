@@ -82,9 +82,20 @@ std::string TintinReporter::levelToString(LogLevel level) const
 
 bool TintinReporter::createLogDirectory()
 {
-    if(access(Config::LOG_DIR.c_str(), F_OK) == 0)
+    std::string dir_to_create;
+    if (m_path_logfile == Config::LOG_FILE) 
+        dir_to_create = Config::LOG_DIR;
+    else 
+    {
+        size_t last_slash = m_path_logfile.find_last_of("/\\");
+        if (last_slash != std::string::npos) 
+            dir_to_create = m_path_logfile.substr(0, last_slash);
+        else
+            return true;
+    }
+    if (access(dir_to_create.c_str(), F_OK) == 0)
         return true;
-    if (mkdir(Config::LOG_DIR.c_str(), 0755) != 0) 
+    if (mkdir(dir_to_create.c_str(), 0755) != 0) 
         return false;
     return true;
 }
