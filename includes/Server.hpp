@@ -25,7 +25,7 @@ class Server
         int m_port;
         int m_server_fd;
         TintinReporter& m_logger;
-        bool m_runnig;
+        bool m_running;
         std::vector<int> m_client_fds;
         fd_set m_readFds;
 
