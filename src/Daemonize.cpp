@@ -18,7 +18,7 @@ namespace
             return false;
         if(pid > 0)
             _exit(0);
-        return false;
+        return true;
     }
 
     bool newSession()
