@@ -10,6 +10,7 @@ class Server
     public:
 
         Server() = delete;
+        Server(TintinReporter& logger);
         Server(int port, TintinReporter& logger);
         Server(const Server&) = delete;
         Server& operator=(const Server&) = delete;

@@ -12,6 +12,11 @@
 
 // Constructor/Destructor
 
+Server::Server(TintinReporter& logger)
+    : Server(Config::SERVER_PORT, logger)
+{
+}
+
 Server::Server(int port, TintinReporter& logger)
     : m_port(port)
     , m_server_fd(-1)
