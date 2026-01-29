@@ -7,12 +7,15 @@
 #include <arpa/inet.h>
 #include <cstring>
 #include <cerrno>
+#include <sys/signalfd.h>
+#include <signal.h>
 
 // Constructor/Destructor
 
 Server::Server(int port, TintinReporter& logger)
     : m_port(port)
     , m_server_fd(-1)
+    , m_signal_fd(-1)
     , m_logger(logger)
     , m_running(false)
 {
@@ -22,6 +25,11 @@ Server::Server(int port, TintinReporter& logger)
 Server::~Server()
 {
     stop();
+    if (m_signal_fd >= 0)
+    {
+        close(m_signal_fd);
+        m_logger.log(TintinReporter::LogLevel::Info, "Signal fd closed");
+    }
     if (m_server_fd >= 0)
     {
         close(m_server_fd);
@@ -34,16 +42,14 @@ Server::~Server()
 bool Server::init()
 {
     m_logger.log(TintinReporter::LogLevel::Info, "Creating server...");
-    
     if (!createSocket())
         return false;
-    
     if (!bindSocket())
         return false;
-    
     if (!listenSocket())
         return false;
-    
+    if (!setupSignals())
+        return false;
     m_logger.log(TintinReporter::LogLevel::Info, "Server created.");
     return true;
 }
@@ -100,6 +106,67 @@ bool Server::listenSocket()
     return true;
 }
 
+bool Server::setupSignals()
+{
+    sigset_t mask;
+    sigemptyset(&mask);             // Init signal set
+
+    // Add signals to handle
+    sigaddset(&mask, SIGTERM);      // Terminatiopn signal
+    sigaddset(&mask, SIGINT);       // Interrupt Ctrl + C
+    sigaddset(&mask, SIGQUIT);      // Quit
+    sigaddset(&mask, SIGHUP);       // Hangup
+
+    // Block signals, only delivered by signalfd
+    if (sigprocmask(SIG_BLOCK, &mask, NULL) < 0)
+    {
+        m_logger.log(TintinReporter::LogLevel::Error, "sigprocmask() failed: " + std::string(strerror(errno)));
+        return false;
+    }
+    // Create signal fd
+    m_signal_fd = signalfd(-1, &mask, SFD_NONBLOCK | SFD_CLOEXEC);
+    if (m_signal_fd < 0)
+    {
+        m_logger.log(TintinReporter::LogLevel::Error, "signalfd() failed: " + std::string(strerror(errno)));
+        return false;
+    }  
+    m_logger.log(TintinReporter::LogLevel::Info, "Signal handling configured (signalfd)");
+    return true;
+}
+
+// Signal handler
+
+std::string Server::getSignalName(int signum)
+{
+    switch (signum)
+    {
+        case SIGTERM:   return "SIGTERM";
+        case SIGINT:    return "SIGINT";
+        case SIGQUIT:   return "SIGQUIT";
+        case SIGHUP:    return "SIGHUP";
+        default:        return "UNKNOWN(" + std::to_string(signum) + ")";
+    }
+}
+
+void Server::handleSignal()
+{
+    struct signalfd_siginfo siginfo; 
+    ssize_t bytes = read(m_signal_fd, &siginfo, sizeof(siginfo));
+    if (bytes != sizeof(siginfo))
+    {
+        m_logger.log(TintinReporter::LogLevel::Error, "Failed to read signal info");
+        return;
+    }
+    
+    int signum = siginfo.ssi_signo;
+    std::string signame = getSignalName(signum);   
+    m_logger.log(TintinReporter::LogLevel::Info, "Received signal: " + signame);
+    
+    // Stop server on any of these signals
+    m_logger.log(TintinReporter::LogLevel::Info, "Shutting down...");
+    stop();
+}
+
 // Server main loop
 
 void Server::run()
@@ -126,6 +193,12 @@ void Server::run()
 
         if (activity == 0)
             continue;
+
+        if (FD_ISSET(m_signal_fd, &m_read_fds))
+        {
+            handleSignal();
+            continue;
+        }
 
         if (FD_ISSET(m_server_fd, &m_read_fds))
             acceptNewClient();
@@ -248,7 +321,9 @@ void Server::processMessage(int clientFd, const std::string& message)
 int Server::getMaxFd() const
 {
     int maxFd = m_server_fd;
-    
+
+    if (m_signal_fd > maxFd)
+        maxFd = m_signal_fd;   
     for (size_t i = 0; i < m_client_fds.size(); i++)
     {
         if (m_client_fds[i] > maxFd)
@@ -261,7 +336,9 @@ void Server::setupFdSet()
 {
     FD_ZERO(&m_read_fds);
     FD_SET(m_server_fd, &m_read_fds);
-    
+
+    if (m_signal_fd >= 0)
+        FD_SET(m_signal_fd, &m_read_fds);
     for (size_t i = 0; i < m_client_fds.size(); i++)
         FD_SET(m_client_fds[i], &m_read_fds);
 }

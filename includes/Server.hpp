@@ -8,7 +8,7 @@ class TintinReporter;
 class Server
 {
     public:
-    
+
         Server() = delete;
         Server(int port, TintinReporter& logger);
         Server(const Server&) = delete;
@@ -26,6 +26,7 @@ class Server
 
         int                 m_port;
         int                 m_server_fd;
+        int                 m_signal_fd;
         TintinReporter&     m_logger;
         bool                m_running;
         std::vector<int>    m_client_fds;
@@ -35,6 +36,11 @@ class Server
         bool createSocket();
         bool bindSocket();
         bool listenSocket();
+        bool setupSignals();
+
+        // Signal handler
+        void handleSignal();
+        std::string getSignalName(int signum);
 
         // Client management
         void acceptNewClient();
