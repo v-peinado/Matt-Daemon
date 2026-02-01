@@ -117,10 +117,13 @@ bool Server::setupSignals()
     sigemptyset(&mask);             // Init signal set
 
     // Add signals to handle
-    sigaddset(&mask, SIGTERM);      // Terminatiopn signal
-    sigaddset(&mask, SIGINT);       // Interrupt Ctrl + C
-    sigaddset(&mask, SIGQUIT);      // Quit
-    sigaddset(&mask, SIGHUP);       // Hangup
+    sigaddset(&mask, SIGTERM);      // (15)Terminatiopn signal
+    sigaddset(&mask, SIGINT);       // (2)Interrupt Ctrl + C
+    sigaddset(&mask, SIGQUIT);      // (3)Quit
+    sigaddset(&mask, SIGHUP);       // (1)Hangup
+
+    // SIGKILL(9)  - Kill signal (immediate termination, no cleanup) kill -9
+    // SIGSTOP(19) - Stop signal (immediate pause, no cleanup) kill -STOP
 
     // Block signals, only delivered by signalfd
     if (sigprocmask(SIG_BLOCK, &mask, NULL) < 0)
