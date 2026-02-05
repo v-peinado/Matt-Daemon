@@ -9,6 +9,7 @@
 #include <cerrno>
 #include <sys/signalfd.h>
 #include <signal.h>
+#include <format>
 
 // Constructor/Destructor
 
@@ -127,7 +128,7 @@ void Server::setupSignals()
 
 // Signal handler
 
-std::string Server::getSignalName(int signum)
+std::string_view Server::getSignalName(int signum)
 {
     switch (signum)
     {
@@ -178,7 +179,7 @@ void Server::run()
             if (errno == EINTR)
                 continue;
             
-            m_logger.log(TintinReporter::LogLevel::Error, "select() failed: " + std::string(strerror(errno)));
+            throw std::runtime_error(std::format("select() failed: {}", strerror(errno)));
             break;
         }
 
@@ -210,10 +211,11 @@ void Server::stop()
 {
     if (!m_running)
         return;
+
     m_running = false;
 
-    for (size_t i = 0; i < m_client_fds.size(); i++)
-        close(m_client_fds[i]);
+    for (int fd : m_client_fds)
+        close(fd);
 
     m_client_fds.clear();
     m_logger.log(TintinReporter::LogLevel::Info, "All clients disconnected");
@@ -239,21 +241,17 @@ void Server::acceptNewClient()
 
     struct sockaddr_in clientAddr;
     socklen_t addrLen = sizeof(clientAddr);
-    int clientFd = accept(m_server_fd, (struct sockaddr*)&clientAddr, &addrLen);
+    int clientFd = accept(m_server_fd, reinterpret_cast<sockaddr*>&clientAddr, &addrLen);
 
     if (clientFd < 0)
-    {
-        m_logger.log(TintinReporter::LogLevel::Error, "accept() failed: " + std::string(strerror(errno)));
-        return;
-    }
+        throw std::runtime_error(std::format("accept() failed: {}", strerror(errno)));
     m_client_fds.push_back(clientFd);
     m_logger.log(TintinReporter::LogLevel::Info, "Client connected from " + std::string(inet_ntoa(clientAddr.sin_addr)) + ":" + std::to_string(ntohs(clientAddr.sin_port)));
 }
 
 void Server::handleClientData(int clientFd)
 {
-    char buffer[Config::BUFFER_SIZE];
-    std::memset(buffer, 0, sizeof(buffer));
+    char buffer[Config::BUFFER_SIZE]{};
     ssize_t bytesRead = recv(clientFd, buffer, sizeof(buffer) - 1, 0);
     
     if (bytesRead <= 0)
@@ -311,10 +309,8 @@ void Server::processMessage(int clientFd, const std::string& message)
 
 int Server::getMaxFd() const
 {
-    int maxFd = m_server_fd;
+    int maxFd = std::max(m_server_fd, m_signal_fd);
 
-    if (m_signal_fd > maxFd)
-        maxFd = m_signal_fd;   
     for (size_t i = 0; i < m_client_fds.size(); i++)
     {
         if (m_client_fds[i] > maxFd)
@@ -330,6 +326,6 @@ void Server::setupFdSet()
 
     if (m_signal_fd >= 0)
         FD_SET(m_signal_fd, &m_read_fds);
-    for (size_t i = 0; i < m_client_fds.size(); i++)
-        FD_SET(m_client_fds[i], &m_read_fds);
+    for (int fd : m_client_fds)
+        FD_SET(fd, &m_read_fds);
 }

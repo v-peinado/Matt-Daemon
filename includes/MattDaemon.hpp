@@ -7,7 +7,7 @@ class MattDaemon
     public:
 
         MattDaemon();
-        MattDaemon(int port);
+        explicit MattDaemon(int port);
         MattDaemon(const MattDaemon&) = delete;
         MattDaemon& operator=(const MattDaemon&) = delete;
         MattDaemon(MattDaemon&&) = delete;
