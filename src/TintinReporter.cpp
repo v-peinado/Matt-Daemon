@@ -23,7 +23,7 @@ TintinReporter::TintinReporter(const std::string& logfile)
     {
         throw std::runtime_error("Cannot create log directory");
     }
-    m_file.open(m_path_logfile.c_str(), std::ios::out | std::ios::app);
+    m_file.open(m_path_logfile, std::ios::out | std::ios::app);
     if(!m_file.is_open())
     {
         throw std::runtime_error("Cannot open log file: " + m_path_logfile);
@@ -35,14 +35,11 @@ TintinReporter::TintinReporter(const std::string& logfile)
 |                        TintinReporter public methods                        |
 ============================================================================ */
 
-void TintinReporter::log(LogLevel level, const std::string& msg)
+void TintinReporter::log(LogLevel level, std::string_view msg)
 {
     if(!m_file.is_open())
         throw std::runtime_error("Cannot open log file: " + m_path_logfile);
-    std::string time = getCurrentTime();
-    std::string lvlString = levelToString(level);
-
-    m_file << time << " " << lvlString << " - " << Config::DAEMON_NAME << ": "  << msg << std::endl; 
+    m_file << getCurrentTime() << " " << levelToString(level) << " - " << Config::DAEMON_NAME << ": "  << msg << std::endl; 
 }
 
 bool TintinReporter::isOpen() const
@@ -68,7 +65,7 @@ std::string TintinReporter::getCurrentTime() const
     return std::string(buffer);
 }
 
-std::string TintinReporter::levelToString(LogLevel level) const
+std::string_view TintinReporter::levelToString(LogLevel level) const
 {
     switch (level)
     {
@@ -80,22 +77,20 @@ std::string TintinReporter::levelToString(LogLevel level) const
     }
 }
 
-bool TintinReporter::createLogDirectory()
+void TintinReporter::createLogDirectory()
 {
     std::string dir_to_create;
-    if (m_path_logfile == Config::LOG_FILE) 
-        dir_to_create = Config::LOG_DIR;
-    else 
+    if (m_path_logfile == Config::LOG_FILE)
+        dir_to_create = std::string(Config::LOG_DIR);
+    else
     {
         size_t last_slash = m_path_logfile.find_last_of("/\\");
-        if (last_slash != std::string::npos) 
-            dir_to_create = m_path_logfile.substr(0, last_slash);
-        else
-            return true;
+        if (last_slash == std::string::npos)
+            return;
+        dir_to_create = m_path_logfile.substr(0, last_slash);
     }
     if (access(dir_to_create.c_str(), F_OK) == 0)
-        return true;
-    if (mkdir(dir_to_create.c_str(), 0755) != 0) 
-        return false;
-    return true;
+        return;
+    if (mkdir(dir_to_create.c_str(), 0755) != 0)
+        throw std::runtime_error("Cannot create log directory: " + dir_to_create);
 }

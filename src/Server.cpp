@@ -35,6 +35,7 @@ Server::~Server()
         close(m_signal_fd);
         m_logger.log(TintinReporter::LogLevel::Info, "Signal fd closed");
     }
+
     if (m_server_fd >= 0)
     {
         close(m_server_fd);
@@ -44,19 +45,14 @@ Server::~Server()
 
 // Server initialization 
 
-bool Server::init()
+void Server::init()
 {
     m_logger.log(TintinReporter::LogLevel::Info, "Creating server...");
-    if (!createSocket())
-        return false;
-    if (!bindSocket())
-        return false;
-    if (!listenSocket())
-        return false;
-    if (!setupSignals())
-        return false;
+    createSocket();
+    bindSocket();
+    listenSocket();
+    setupSignals();
     m_logger.log(TintinReporter::LogLevel::Info, "Server created.");
-    return true;
 }
 
 bool Server::createSocket()
@@ -64,10 +60,7 @@ bool Server::createSocket()
     m_server_fd = socket(AF_INET, SOCK_STREAM, 0);
     
     if (m_server_fd < 0)
-    {
-        m_logger.log(TintinReporter::LogLevel::Error, "socket() failed: " + std::string(strerror(errno)));
-        return false;
-    }
+        throw std::runtime_error("socket() failed: " + std::string(strerror(errno)));
     
     int opt = 1;
     if (setsockopt(m_server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0)
@@ -77,7 +70,7 @@ bool Server::createSocket()
     return true;
 }
 
-bool Server::bindSocket()
+void Server::bindSocket()
 {
     struct sockaddr_in serverAddr;
     std::memset(&serverAddr, 0, sizeof(serverAddr));
@@ -87,31 +80,27 @@ bool Server::bindSocket()
 
     if (bind(m_server_fd, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) < 0)
     {
-        m_logger.log(TintinReporter::LogLevel::Error, "bind() failed: " + std::string(strerror(errno)));
         close(m_server_fd);
         m_server_fd = -1;
-        return false;
+        throw std::runtime_error("bind() failed: " + std::string(strerror(errno)));
     }
     
     m_logger.log(TintinReporter::LogLevel::Info, "Socket bound to port " + std::to_string(m_port));
-    return true;
 }
 
-bool Server::listenSocket()
+void Server::listenSocket()
 {
     if (listen(m_server_fd, 5) < 0)
     {
-        m_logger.log(TintinReporter::LogLevel::Error, "listen() failed: " + std::string(strerror(errno)));
         close(m_server_fd);
         m_server_fd = -1;
-        return false;
+        throw std::runtime_error("listen() failed: " + std::string(strerror(errno)));
     }
     
     m_logger.log(TintinReporter::LogLevel::Info, "Server listening on port " + std::to_string(m_port));
-    return true;
 }
 
-bool Server::setupSignals()
+void Server::setupSignals()
 {
     sigset_t mask;
     sigemptyset(&mask);             // Init signal set
@@ -127,19 +116,13 @@ bool Server::setupSignals()
 
     // Block signals, only delivered by signalfd
     if (sigprocmask(SIG_BLOCK, &mask, NULL) < 0)
-    {
-        m_logger.log(TintinReporter::LogLevel::Error, "sigprocmask() failed: " + std::string(strerror(errno)));
-        return false;
-    }
+        throw std::runtime_error("sigprocmask() failed: " + std::string(strerror(errno)));
+
     // Create signal fd
     m_signal_fd = signalfd(-1, &mask, SFD_NONBLOCK | SFD_CLOEXEC);
     if (m_signal_fd < 0)
-    {
-        m_logger.log(TintinReporter::LogLevel::Error, "signalfd() failed: " + std::string(strerror(errno)));
-        return false;
-    }  
+        throw std::runtime_error("signalfd() failed: " + std::string(strerror(errno)));
     m_logger.log(TintinReporter::LogLevel::Info, "Signal handling configured (signalfd)");
-    return true;
 }
 
 // Signal handler
@@ -180,7 +163,7 @@ void Server::handleSignal()
 void Server::run()
 {
     m_running = true;
-    m_logger.log(TintinReporter::LogLevel::Info, "Server started");
+    m_logger.log(TintinReporter::LogLevel::Info, "Server running");
     
     while (m_running)
     {
@@ -188,7 +171,7 @@ void Server::run()
         struct timeval timeout;
         timeout.tv_sec = 1;
         timeout.tv_usec = 0; 
-        int activity = select(getMaxFd() + 1, &m_read_fds, NULL, NULL, &timeout);
+        int activity = select(getMaxFd() + 1, &m_read_fds, nullptr, nullptr, &timeout);
 
         if (activity < 0)
         {

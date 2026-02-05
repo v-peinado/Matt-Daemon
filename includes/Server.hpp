@@ -2,6 +2,7 @@
 #include <vector>
 #include <string>
 #include <sys/select.h>
+#include <string_view>
 
 class TintinReporter;
 
@@ -10,7 +11,7 @@ class Server
     public:
 
         Server() = delete;
-        Server(TintinReporter& logger);
+        explicit Server(TintinReporter& logger);
         Server(int port, TintinReporter& logger);
         Server(const Server&) = delete;
         Server& operator=(const Server&) = delete;
@@ -18,10 +19,10 @@ class Server
         Server& operator=(Server&&) = delete;
         ~Server();
 
-        bool init();
+        void init();
         void run();
         void stop();
-        bool isRunning() const;
+        [[nodiscard]] bool isRunning() const;
     
     private:
 
@@ -34,25 +35,25 @@ class Server
         fd_set              m_read_fds;
 
         // Server setup
-        bool createSocket();
-        bool bindSocket();
-        bool listenSocket();
-        bool setupSignals();
+        void createSocket();
+        void bindSocket();
+        void listenSocket();
+        void setupSignals();
 
         // Signal handler
         void handleSignal();
-        std::string getSignalName(int signum);
+        [[nodiscard]] std::string getSignalName(int signum);
 
         // Client management
         void acceptNewClient();
         void handleClientData(int clientFd);
         void disconnectClient(int clientFd);
-        bool canAcceptClient() const;
+        [[nodiscard]] bool canAcceptClient() const;
 
         // Message processing
         void processMessage(int clientFd, const std::string& msg);
 
         // Helpers
-        int getMaxFd() const;
+        [[nodiscard]] int getMaxFd() const;
         void setupFdSet();
 };

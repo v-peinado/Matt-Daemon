@@ -1,14 +1,14 @@
 #pragma once
 #include <string>
 #include <fstream>
+#include <string_view>
 
-// File-based logger with daemon-style formatting
 class TintinReporter
 {
     public:
 
         TintinReporter();
-        TintinReporter(const std::string& logfile);
+        explicit TintinReporter(const std::string& logfile);
         TintinReporter(const TintinReporter&) = delete;
         TintinReporter& operator=(const TintinReporter&) = delete;
         TintinReporter(TintinReporter&&) = delete;
@@ -23,15 +23,15 @@ class TintinReporter
             Error           // Critical errors
         };
 
-        void log(LogLevel level, const std::string& msg);
-        bool isOpen() const;
+        void log(LogLevel level, std::string_view msg);
+        [[nodiscard]] bool isOpen() const;
 
     private:
 
         std::string     m_path_logfile;
         std::ofstream   m_file;
 
-        std::string getCurrentTime() const;
-        std::string levelToString(LogLevel level) const;
+        [[nodiscard]] std::string getCurrentTime() const;
+        [[nodiscard]] std::string_view levelToString(LogLevel level) const;
         bool createLogDirectory();
 };

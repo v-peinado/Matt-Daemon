@@ -11,91 +11,55 @@
 
 namespace
 {
-    bool performFork()
+    void performFork()
     {
         pid_t pid = fork();
         if(pid < 0)
-            return false;
+            throw std::runtime_error("fork() failed");
+
         if(pid > 0)
             _exit(0);
-        return true;
     }
 
-    bool newSession()
+    void newSession()
     {
         if(setsid() < 0)
-            return false;
-        return true;
+            throw std::runtime_error("setsid() failed");
     }
 
-    bool changeWorkingDir()
+    void changeWorkingDir()
     {
         if(chdir("/") < 0)
-            return false;
-        return true;
+            throw std::runtime_error("chdir(\"/\") failed");
     }
 
-    void closeFd()   // no es realmente necesario dup2 ya cierra, es redundancia por seguridad y limpieza
-    {
-        close(STDIN_FILENO);
-        close(STDOUT_FILENO);
-        close(STDERR_FILENO);
-    }
-
-    bool redirectFd()
+    void redirectFd()
     {
         int dev_null = open("/dev/null", O_RDWR);
         if (dev_null < 0)
-            return false;
+            throw std::runtime_error("Cannot open /dev/null");
+
         if (dup2(dev_null, STDIN_FILENO) < 0 ||
             dup2(dev_null, STDOUT_FILENO) < 0 ||
             dup2(dev_null, STDERR_FILENO) < 0)
         {
             close(dev_null);
-            return false;
+            throw std::runtime_error("Failed to redirect standard FDs");
         }
+
         if (dev_null > STDERR_FILENO)
             close(dev_null);
-        return true;
     }
 }
 
-bool Daemonize::daemonize(TintinReporter& logger)
+void Daemonize::daemonize(TintinReporter& logger)
 {
-    if(!performFork())
-    {
-        logger.log(TintinReporter::LogLevel::Error, "First fork() failed");
-        return false;
-    }
-    logger.log(TintinReporter::LogLevel::Info, "First fork() successful");   
-    if(!newSession())
-    {
-        logger.log(TintinReporter::LogLevel::Error, "setsid() failed");
-        return false;
-    }
-    logger.log(TintinReporter::LogLevel::Info, "New session created");   
-    if(!performFork())
-    {
-        logger.log(TintinReporter::LogLevel::Error, "Second fork() failed");
-        return false;
-    }
-    logger.log(TintinReporter::LogLevel::Info, "Second fork() successful");   
-    if(!changeWorkingDir())
-    {
-        logger.log(TintinReporter::LogLevel::Error, "chdir(\"/\") failed");
-        return false;
-    }
-    logger.log(TintinReporter::LogLevel::Info, "Changed directory to /");  
+    performFork();
+    newSession();
+    performFork();
+    changeWorkingDir();
     umask(0);
-    logger.log(TintinReporter::LogLevel::Info, "File creation mask reset");
-    closeFd();
-    logger.log(TintinReporter::LogLevel::Info, "File descriptors closed");
-    if(!redirectFd())
-    {
-        logger.log(TintinReporter::LogLevel::Error, "Failed to redirect standard FDs");
-        return false;
-    }
+    redirectFd();
     logger.log(TintinReporter::LogLevel::Info, "Standard FDs redirected to /dev/null");       
     logger.log(TintinReporter::LogLevel::Info, "Entering Daemon mode");
-    return true;
 }
