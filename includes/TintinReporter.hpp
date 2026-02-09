@@ -33,5 +33,5 @@ class TintinReporter
 
         [[nodiscard]] std::string getCurrentTime() const;
         [[nodiscard]] std::string_view levelToString(LogLevel level) const;
-        bool createLogDirectory();
+        void createLogDirectory();
 };

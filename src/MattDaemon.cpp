@@ -12,12 +12,12 @@
 
 // Constructor/Destructor
 
-MattDaemon::MattDaemon()
+MattDaemon::MattDaemon(TintinReporter& logger)
     : MattDaemon(Config::SERVER_PORT)
 {
 }
 
-MattDaemon::MattDaemon(int port)
+MattDaemon::MattDaemon(TintinReporter& logger, int port)
     : m_logger()
     , m_server(port, m_logger)
     , m_lock_fd(-1)
@@ -31,7 +31,7 @@ MattDaemon::~MattDaemon()
     
     if (m_initialized)
     {
-        m_logger.log(TintinReporter::LogLevel::Info, "Daemon stopped");
+        m_logger.log(TintinReporter::LogLevel::Info, "Quitting.");
     }
 }
 
@@ -39,7 +39,7 @@ MattDaemon::~MattDaemon()
 
 void MattDaemon::init()
 {
-    m_logger.log(TintinReporter::LogLevel::Info, "Started");
+    m_logger.log(TintinReporter::LogLevel::Info, "Started.");
     checkRoot();            // Check root privileges
     createLockFile();
 
@@ -57,7 +57,6 @@ void MattDaemon::run()
     
     Daemonize::daemonize(m_logger);
   
-    pid_t pid = getpid();
     m_logger.log(TintinReporter::LogLevel::Info, std::format("started. PID: {}.", getpid()));
     
     m_server.run();

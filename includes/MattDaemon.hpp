@@ -6,8 +6,10 @@ class MattDaemon
 {
     public:
 
-        MattDaemon();
-        explicit MattDaemon(int port);
+        explicit MattDaemon(TintinReporter& logger);
+        MattDaemon(TintinReporter& logger, int port);
+
+        MattDaemon() = delete;
         MattDaemon(const MattDaemon&) = delete;
         MattDaemon& operator=(const MattDaemon&) = delete;
         MattDaemon(MattDaemon&&) = delete;
@@ -19,10 +21,10 @@ class MattDaemon
 
     private:
 
-        TintinReporter  m_logger;
-        Server          m_server;
-        int             m_lock_fd;
-        bool            m_initialized;
+        TintinReporter&     m_logger;
+        Server              m_server;
+        int                 m_lock_fd;
+        bool                m_initialized;
 
         // Initialization helpers
         void checkRoot();

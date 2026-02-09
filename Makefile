@@ -1,7 +1,7 @@
 # Compiler and flags
 NAME        = Matt_daemon
 CXX         = c++
-CXXFLAGS    = -Wall -Wextra -Werror
+CXXFLAGS    = -Wall -Wextra -Werror -std=c++20
 INCLUDES    = -Iincludes
 
 # Directories

@@ -56,7 +56,7 @@ void Server::init()
     m_logger.log(TintinReporter::LogLevel::Info, "Server created.");
 }
 
-bool Server::createSocket()
+void Server::createSocket()
 {
     m_server_fd = socket(AF_INET, SOCK_STREAM, 0);
     
@@ -68,7 +68,6 @@ bool Server::createSocket()
         m_logger.log(TintinReporter::LogLevel::Warning, "setsockopt(SO_REUSEADDR) failed");
     
     m_logger.log(TintinReporter::LogLevel::Info, "Socket created");
-    return true;
 }
 
 void Server::bindSocket()
@@ -136,7 +135,7 @@ std::string_view Server::getSignalName(int signum)
         case SIGINT:    return "SIGINT";
         case SIGQUIT:   return "SIGQUIT";
         case SIGHUP:    return "SIGHUP";
-        default:        return "UNKNOWN(" + std::to_string(signum) + ")";
+        default:        return "UNKNOWN";
     }
 }
 
@@ -151,11 +150,11 @@ void Server::handleSignal()
     }
     
     int signum = siginfo.ssi_signo;
-    std::string signame = getSignalName(signum);   
-    m_logger.log(TintinReporter::LogLevel::Info, "Received signal: " + signame);
+       
+    m_logger.log(TintinReporter::LogLevel::Info, std::format("Received signal: {}", getSignalName(signum)));
     
     // Stop server on any of these signals
-    m_logger.log(TintinReporter::LogLevel::Info, "Shutting down...");
+    m_logger.log(TintinReporter::LogLevel::Info, "Signal handler.");
     stop();
 }
 
@@ -241,12 +240,13 @@ void Server::acceptNewClient()
 
     struct sockaddr_in clientAddr;
     socklen_t addrLen = sizeof(clientAddr);
-    int clientFd = accept(m_server_fd, reinterpret_cast<sockaddr*>&clientAddr, &addrLen);
+    int clientFd = accept(m_server_fd, reinterpret_cast<sockaddr*>(&clientAddr), &addrLen);
 
     if (clientFd < 0)
         throw std::runtime_error(std::format("accept() failed: {}", strerror(errno)));
     m_client_fds.push_back(clientFd);
-    m_logger.log(TintinReporter::LogLevel::Info, "Client connected from " + std::string(inet_ntoa(clientAddr.sin_addr)) + ":" + std::to_string(ntohs(clientAddr.sin_port)));
+    m_logger.log(TintinReporter::LogLevel::Info, 
+    std::format("Client connected from {}:{}", inet_ntoa(clientAddr.sin_addr), ntohs(clientAddr.sin_port)));
 }
 
 void Server::handleClientData(int clientFd)
@@ -259,15 +259,16 @@ void Server::handleClientData(int clientFd)
         if (bytesRead == 0)
             m_logger.log(TintinReporter::LogLevel::Info, "Client disconnected");
         else
-            m_logger.log(TintinReporter::LogLevel::Error, "recv() failed: " + std::string(strerror(errno))); 
+            m_logger.log(TintinReporter::LogLevel::Error, std::format("recv() failed: {}", strerror(errno)));
         disconnectClient(clientFd);
         return;
     }
 
     std::string message(buffer, bytesRead);
 
-    if (!message.empty() && message[message.length() - 1] == '\n')
-        message.erase(message.length() - 1); 
+    while (!message.empty() && (message.back() == '\n' || message.back() == '\r'))  // Win and telnet too
+        message.pop_back();
+
     processMessage(clientFd, message);
 }
 
@@ -302,7 +303,7 @@ void Server::processMessage(int clientFd, const std::string& message)
         stop();
     }
     else
-        m_logger.log(TintinReporter::LogLevel::Log, "User input: " + message);   
+        m_logger.log(TintinReporter::LogLevel::Log, std::format("User input: {}", message));   
 }
 
 // Helper functions 

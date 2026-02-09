@@ -42,7 +42,7 @@ class Server
 
         // Signal handler
         void handleSignal();
-        [[nodiscard]] std::string getSignalName(int signum);
+        [[nodiscard]] std::string_view getSignalName(int signum);
 
         // Client management
         void acceptNewClient();

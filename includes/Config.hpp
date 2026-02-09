@@ -8,7 +8,7 @@ namespace Config
     constexpr int                   SERVER_PORT = 4242;
     constexpr int                   MAX_CLIENTS = 3;
     constexpr int                   BUFFER_SIZE = 1024;
-    constexpr std::string_view      DAEMON_NAME = "MattDaemon";
+    constexpr std::string_view      DAEMON_NAME = "Matt_daemon";
 
     // Paths
     constexpr std::string_view      LOCK_FILE = "/var/lock/matt_daemon.lock";

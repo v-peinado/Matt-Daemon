@@ -4,6 +4,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <cstdlib>
+#include <stdexcept>
 
 /* ============================================================================
 |                    Anonymous namespace - Private helpers                    |
@@ -61,5 +62,5 @@ void Daemonize::daemonize(TintinReporter& logger)
     umask(0);
     redirectFd();
     logger.log(TintinReporter::LogLevel::Info, "Standard FDs redirected to /dev/null");       
-    logger.log(TintinReporter::LogLevel::Info, "Entering Daemon mode");
+    logger.log(TintinReporter::LogLevel::Info, "Entering Daemon mode.");
 }
