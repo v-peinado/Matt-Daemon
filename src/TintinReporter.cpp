@@ -5,7 +5,6 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <stdexcept>
-#include <format>
 
 /* ============================================================================
 |                        TintinReporter constructors                          |
@@ -25,7 +24,7 @@ TintinReporter::TintinReporter(const std::string& logfile)
     m_file.open(m_path_logfile, std::ios::out | std::ios::app);
     if(!m_file.is_open())
     {
-        throw std::runtime_error(std::format("Cannot open log file: {}", m_path_logfile));
+        throw std::runtime_error("Cannot open log file: " + m_path_logfile);
     }
             
 }
@@ -37,7 +36,7 @@ TintinReporter::TintinReporter(const std::string& logfile)
 void TintinReporter::log(LogLevel level, std::string_view msg)
 {
     if(!m_file.is_open())
-        throw std::runtime_error(std::format("Cannot open log file: {}", m_path_logfile));
+        throw std::runtime_error("Cannot open log file: : " + m_path_logfile);
     m_file << getCurrentTime() << " " << levelToString(level) << " - " << Config::DAEMON_NAME << ": "  << msg << std::endl; 
 }
 
@@ -91,5 +90,5 @@ void TintinReporter::createLogDirectory()
     if (access(dir_to_create.c_str(), F_OK) == 0)
         return;
     if (mkdir(dir_to_create.c_str(), 0755) != 0)
-        throw std::runtime_error(std::format("Cannot create log directory: {}", dir_to_create));
+        throw std::runtime_error("Cannot create log directory: " +dir_to_create);
 }

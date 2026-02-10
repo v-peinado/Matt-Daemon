@@ -9,7 +9,6 @@
 #include <cerrno>
 #include <sys/signalfd.h>
 #include <signal.h>
-#include <format>
 
 // Constructor/Destructor
 
@@ -151,7 +150,7 @@ void Server::handleSignal()
     
     int signum = siginfo.ssi_signo;
        
-    m_logger.log(TintinReporter::LogLevel::Info, std::format("Received signal: {}", getSignalName(signum)));
+    m_logger.log(TintinReporter::LogLevel::Info, "Received signal: " + std::string(getSignalName(signum)));
     
     // Stop server on any of these signals
     m_logger.log(TintinReporter::LogLevel::Info, "Signal handler.");
@@ -178,7 +177,7 @@ void Server::run()
             if (errno == EINTR)
                 continue;
             
-            throw std::runtime_error(std::format("select() failed: {}", strerror(errno)));
+            throw std::runtime_error("select() failed: " + std::string(strerror(errno)));
             break;
         }
 
@@ -243,10 +242,9 @@ void Server::acceptNewClient()
     int clientFd = accept(m_server_fd, reinterpret_cast<sockaddr*>(&clientAddr), &addrLen);
 
     if (clientFd < 0)
-        throw std::runtime_error(std::format("accept() failed: {}", strerror(errno)));
+        throw std::runtime_error("accept() failed: " + std::string(strerror(errno)));
     m_client_fds.push_back(clientFd);
-    m_logger.log(TintinReporter::LogLevel::Info, 
-    std::format("Client connected from {}:{}", inet_ntoa(clientAddr.sin_addr), ntohs(clientAddr.sin_port)));
+    m_logger.log(TintinReporter::LogLevel::Info, "Client connected from " + std::string(inet_ntoa(clientAddr.sin_addr)) + ":" + std::to_string(ntohs(clientAddr.sin_port)));
 }
 
 void Server::handleClientData(int clientFd)
@@ -259,7 +257,7 @@ void Server::handleClientData(int clientFd)
         if (bytesRead == 0)
             m_logger.log(TintinReporter::LogLevel::Info, "Client disconnected");
         else
-            m_logger.log(TintinReporter::LogLevel::Error, std::format("recv() failed: {}", strerror(errno)));
+            m_logger.log(TintinReporter::LogLevel::Error, "recv() failed: " + std::string(strerror(errno)));
         disconnectClient(clientFd);
         return;
     }
@@ -303,7 +301,7 @@ void Server::processMessage(int clientFd, const std::string& message)
         stop();
     }
     else
-        m_logger.log(TintinReporter::LogLevel::Log, std::format("User input: {}", message));   
+        m_logger.log(TintinReporter::LogLevel::Log, "User input: " + message);  
 }
 
 // Helper functions 

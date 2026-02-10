@@ -8,17 +8,16 @@
 #include <cstring>
 #include <iostream>
 #include <stdexcept>
-#include <format>
 
-// Constructor/Destructor
+// MattDaemon Constructor/Destructor
 
 MattDaemon::MattDaemon(TintinReporter& logger)
-    : MattDaemon(Config::SERVER_PORT)
+    : MattDaemon(logger, Config::SERVER_PORT)
 {
 }
 
 MattDaemon::MattDaemon(TintinReporter& logger, int port)
-    : m_logger()
+    : m_logger(logger)
     , m_server(port, m_logger)
     , m_lock_fd(-1)
     , m_initialized(false)
@@ -35,7 +34,7 @@ MattDaemon::~MattDaemon()
     }
 }
 
-// Initialization
+// MattDaemon Initialization
 
 void MattDaemon::init()
 {
@@ -57,7 +56,7 @@ void MattDaemon::run()
     
     Daemonize::daemonize(m_logger);
   
-    m_logger.log(TintinReporter::LogLevel::Info, std::format("started. PID: {}.", getpid()));
+    m_logger.log(TintinReporter::LogLevel::Info, "started. PID: " + std::to_string(getpid()) + ".");
     
     m_server.run();
 }
@@ -67,7 +66,7 @@ void MattDaemon::checkRoot()
 {
     if (getuid() != 0)
     {
-        m_logger.log(TintinReporter::LogLevel::Error, std::format("Must be run as root (current UID: {})", getuid()));
+        m_logger.log(TintinReporter::LogLevel::Error, "Must be run as root (current UID: " + std::to_string(getuid()) + ")");
         throw std::runtime_error("Must be run as root");
     }
     
@@ -81,7 +80,7 @@ void MattDaemon::createLockFile()
     
     if (m_lock_fd < 0)
     {
-        m_logger.log(TintinReporter::LogLevel::Error, std::format("Cannot open lock file: {}", strerror(errno)));
+        m_logger.log(TintinReporter::LogLevel::Error, "Cannot open lock file: " + std::string(strerror(errno)));
         throw std::runtime_error("Cannot open lock file");
     }
     
@@ -103,14 +102,14 @@ void MattDaemon::createLockFile()
         
         std::cerr << "Error: flock() failed: " << strerror(errno) << std::endl;
         
-        m_logger.log(TintinReporter::LogLevel::Error, std::format("flock() failed: {}", strerror(errno)));
+        m_logger.log(TintinReporter::LogLevel::Error, "flock() failed: " + std::string(strerror(errno)));
         
         close(m_lock_fd);
         m_lock_fd = -1;
         throw std::runtime_error("flock() failed");
     }
 
-    m_logger.log(TintinReporter::LogLevel::Info, std::format("Lock file created: {}", Config::LOCK_FILE));
+    m_logger.log(TintinReporter::LogLevel::Info, "Lock file created: " + std::string(Config::LOCK_FILE));
 }
 
 void MattDaemon::removeLockFile()
@@ -120,7 +119,7 @@ void MattDaemon::removeLockFile()
         flock(m_lock_fd, LOCK_UN);
         close(m_lock_fd);
         m_lock_fd = -1;
-        unlink(Config::LOCK_FILE.c_str());
+        unlink(std::string(Config::LOCK_FILE).c_str());
         m_logger.log(TintinReporter::LogLevel::Info, "Lock file removed");
     }
 }
