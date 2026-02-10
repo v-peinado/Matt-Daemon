@@ -1,121 +1,121 @@
 # Matt_daemon
 
-Unix daemon that listens for TCP connections and logs messages to a file.
+Daemon Unix que escucha conexiones TCP y registra mensajes en un archivo de log.
 
-## Description
+## Descripción
 
-Matt_daemon is a background service that accepts up to 3 simultaneous connections on port 4242 and stores all received messages with timestamps. It implements the classic Unix daemonization pattern with double fork, signal handling via signalfd, and guarantees single-instance through lock file.
+Matt_daemon es un servicio que corre en background, acepta hasta 3 conexiones simultáneas en el puerto 4242, y almacena todos los mensajes recibidos con timestamp. Implementa el patrón clásico de daemonización Unix con doble fork, manejo de señales mediante signalfd, y garantiza single-instance mediante lock file.
 
-## Features
+## Características
 
-- Background execution (real daemon, not a process with `&`)
-- Single-instance via lock file with `flock()`
-- Up to 3 simultaneous clients
-- Timestamped logging to `/var/log/matt_daemon/matt_daemon.log`
-- Clean shutdown on signals (SIGTERM, SIGINT, SIGQUIT, SIGHUP)
-- Remote shutdown via `quit` command
+- Ejecución en background (daemon real, no proceso con `&`)
+- Single-instance mediante lock file con `flock()`
+- Hasta 3 clientes simultáneos
+- Logging con timestamp a `/var/log/matt_daemon/matt_daemon.log`
+- Shutdown limpio ante señales (SIGTERM, SIGINT, SIGQUIT, SIGHUP)
+- Comando `quit` para apagado remoto
 
-## Requirements
+## Requisitos
 
 - Linux (kernel > 3.14)
-- GCC/Clang with C++17 support
-- Root privileges
+- GCC/Clang con soporte C++17
+- Permisos de root
 
-## Installation
+## Instalación
 
 ```bash
-git clone <repository>
+git clone <repositorio>
 cd matt_daemon
 make
 ```
 
-## Usage
+## Uso
 
-### Start the daemon
+### Iniciar el daemon
 
 ```bash
 sudo ./Matt_daemon
 ```
 
-### Connect and send messages
+### Conectar y enviar mensajes
 
 ```bash
 nc localhost 4242
-Hello world
-This message gets logged
+Hola mundo
+Este mensaje se loguea
 quit
 ```
 
-### Check status
+### Verificar estado
 
 ```bash
-# Check if running
+# Ver si está corriendo
 ps aux | grep Matt_daemon
 
-# Check lock file
+# Ver lock file
 ls -l /var/lock/matt_daemon.lock
 
-# View logs
+# Ver logs
 tail -f /var/log/matt_daemon/matt_daemon.log
 ```
 
-### Stop the daemon
+### Detener el daemon
 
 ```bash
-# Option 1: Send quit
+# Opción 1: Enviar quit
 echo "quit" | nc localhost 4242
 
-# Option 2: Signal
+# Opción 2: Señal
 sudo kill -SIGTERM $(pgrep Matt_daemon)
 ```
 
 ## Docker
 
-To avoid running as root on the host, you can use Docker.
+Para evitar ejecutar como root en el host, puedes usar Docker.
 
-### Build
+### Construcción
 
 ```bash
 docker build -t matt_daemon .
 ```
 
-### Run
+### Ejecución
 
 ```bash
-# Start container (daemon starts automatically)
+# Iniciar contenedor (daemon arranca automáticamente)
 docker run -d --name matt_daemon -p 4242:4242 matt_daemon
 
-# Connect from host
+# Conectar desde el host
 nc localhost 4242
 
-# View logs from outside
+# Ver logs desde fuera
 docker exec matt_daemon cat /var/log/matt_daemon/matt_daemon.log
 
-# Shell inside container
+# Shell dentro del contenedor
 docker exec -it matt_daemon bash
 
-# Stop
+# Detener
 docker stop matt_daemon
 docker rm matt_daemon
 ```
 
-### Useful commands inside the container
+### Comandos útiles dentro del contenedor
 
 ```bash
-# View processes
+# Ver procesos
 ps aux | grep Matt
 
-# Check lock file
+# Ver lock file
 ls -la /var/lock/
 
-# Follow logs in real time
+# Seguir logs en tiempo real
 tail -f /var/log/matt_daemon/matt_daemon.log
 
-# Connect locally
+# Conectar localmente
 nc localhost 4242
 ```
 
-## Architecture
+## Arquitectura
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -124,7 +124,7 @@ nc localhost 4242
 │    ┌─────────────────────┼─────────────────────┐        │
 │    ▼                     ▼                     ▼        │
 │ TintinReporter      MattDaemon              Config      │
-│ (logging)           (orchestrator)        (constants)   │
+│ (logging)      (orquestador, interfaz)    (constantes)  │
 │                          │                              │
 │            ┌─────────────┼─────────────┐                │
 │            ▼                           ▼                │
@@ -133,24 +133,24 @@ nc localhost 4242
 └─────────────────────────────────────────────────────────┘
 ```
 
-| Component | Responsibility |
-|-----------|----------------|
-| `TintinReporter` | Timestamped log writing |
-| `MattDaemon` | Root verification, lock file, lifecycle |
-| `Server` | TCP socket, I/O multiplexing with select(), signals |
-| `Daemonize` | Double fork, setsid, FD redirection |
-| `Config` | Constants: port, paths, limits |
+| Componente | Responsabilidad |
+|------------|-----------------|
+| `TintinReporter` | Escritura de logs con timestamp |
+| `MattDaemon` | Verificación root, lock file, ciclo de vida |
+| `Server` | Socket TCP, multiplexación con select(), señales |
+| `Daemonize` | Doble fork, setsid, redirección de FDs |
+| `Config` | Constantes: puerto, rutas, límites |
 
-## Execution Flow
+## Flujo de Ejecución
 
 ```
 main()
   │
-  ├─► TintinReporter()           # Create logger
+  ├─► TintinReporter()           # Crear logger
   │     └─► mkdir(), open()
   │
   ├─► MattDaemon::init()
-  │     ├─► getuid()             # Verify root
+  │     ├─► getuid()             # Verificar root
   │     ├─► open(), flock()      # Lock file
   │     └─► Server::init()
   │           ├─► socket()
@@ -165,70 +165,70 @@ main()
         │     ├─► chdir("/")
         │     └─► dup2() → /dev/null
         │
-        └─► Server::run()        # Main loop
+        └─► Server::run()        # Loop principal
               └─► select()
-                    ├─► signal  → shutdown
-                    ├─► new client → accept()
-                    └─► data → recv() → log
+                    ├─► señal  → shutdown
+                    ├─► nuevo cliente → accept()
+                    └─► datos → recv() → log
 ```
 
-## Signals
+## Señales
 
-| Signal | Behavior |
-|--------|----------|
-| SIGTERM | Log + clean shutdown |
-| SIGINT | Log + clean shutdown |
-| SIGQUIT | Log + clean shutdown |
-| SIGHUP | Log + clean shutdown |
-| SIGKILL | Immediate termination (not catchable) |
-| SIGSTOP | Immediate pause (not catchable) |
+| Señal | Comportamiento |
+|-------|----------------|
+| SIGTERM | Log + shutdown limpio |
+| SIGINT | Log + shutdown limpio |
+| SIGQUIT | Log + shutdown limpio |
+| SIGHUP | Log + shutdown limpio |
+| SIGKILL | Terminación inmediata (no manejable) |
+| SIGSTOP | Pausa inmediata (no manejable) |
 
 ## Logs
 
-**Location:** `/var/log/matt_daemon/matt_daemon.log`
+**Ubicación:** `/var/log/matt_daemon/matt_daemon.log`
 
-**Format:**
+**Formato:**
 ```
-[DD/MM/YYYY-HH:MM:SS] [ LEVEL ] - Matt_daemon: message
+[DD/MM/YYYY-HH:MM:SS] [ LEVEL ] - Matt_daemon: mensaje
 ```
 
-**Levels:**
+**Niveles:**
 
-| Level | Usage |
-|-------|-------|
-| INFO | System events (startup, shutdown, connections) |
-| LOG | User messages |
-| WARNING | Non-critical issues |
-| ERROR | Critical errors |
+| Nivel | Uso |
+|-------|-----|
+| INFO | Eventos del sistema (inicio, shutdown, conexiones) |
+| LOG | Mensajes de usuarios |
+| WARNING | Problemas no críticos |
+| ERROR | Errores críticos |
 
-**Log example:**
+**Ejemplo de log:**
 ```
 [11/01/2026-14:34:58] [ INFO ] - Matt_daemon: Started.
 [11/01/2026-14:34:58] [ INFO ] - Matt_daemon: Creating server.
 [11/01/2026-14:34:58] [ INFO ] - Matt_daemon: Server created.
 [11/01/2026-14:34:58] [ INFO ] - Matt_daemon: Entering Daemon mode.
 [11/01/2026-14:34:58] [ INFO ] - Matt_daemon: started. PID: 6498.
-[11/01/2026-14:35:10] [ LOG ] - Matt_daemon: User input: Hello world
+[11/01/2026-14:35:10] [ LOG ] - Matt_daemon: User input: Hola mundo
 [11/01/2026-14:35:15] [ INFO ] - Matt_daemon: Request quit.
 [11/01/2026-14:35:15] [ INFO ] - Matt_daemon: Quitting.
 ```
 
-## System Files
+## Archivos del Sistema
 
-| Path | Purpose |
-|------|---------|
+| Ruta | Propósito |
+|------|-----------|
 | `/var/lock/matt_daemon.lock` | Lock file (single instance) |
-| `/var/log/matt_daemon/matt_daemon.log` | Log file |
+| `/var/log/matt_daemon/matt_daemon.log` | Archivo de log |
 
-## Limitations
+## Limitaciones
 
-- IPv4 only
-- No encryption (plain text)
-- No authentication
-- Maximum 3 simultaneous clients
-- Requires root
+- Solo IPv4
+- Sin cifrado (texto plano)
+- Sin autenticación
+- Máximo 3 clientes simultáneos
+- Requiere root
 
-## Project Structure
+## Estructura del Proyecto
 
 ```
 matt_daemon/
