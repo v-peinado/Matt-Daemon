@@ -6,9 +6,7 @@
 #include <cstdlib>
 #include <stdexcept>
 
-/* ============================================================================
-|                    Anonymous namespace - Private helpers                    |
-============================================================================ */
+// Anonymous namespace - Private helpers
 
 namespace
 {

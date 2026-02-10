@@ -9,7 +9,7 @@
 #include <iostream>
 #include <stdexcept>
 
-// MattDaemon Constructor/Destructor
+// MattDaemon - Constructor/Destructor
 
 MattDaemon::MattDaemon(TintinReporter& logger)
     : MattDaemon(logger, Config::SERVER_PORT)
@@ -34,7 +34,7 @@ MattDaemon::~MattDaemon()
     }
 }
 
-// MattDaemon Initialization
+// MattDaemon - Initialization
 
 void MattDaemon::init()
 {

@@ -10,7 +10,7 @@
 #include <sys/signalfd.h>
 #include <signal.h>
 
-// Constructor/Destructor
+// Server - Constructor/Destructor
 
 Server::Server(TintinReporter& logger)
     : Server(Config::SERVER_PORT, logger)
@@ -43,7 +43,7 @@ Server::~Server()
     }
 }
 
-// Server initialization 
+// Server - Initialization 
 
 void Server::init()
 {

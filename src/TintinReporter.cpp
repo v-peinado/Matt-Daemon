@@ -6,9 +6,8 @@
 #include <sys/stat.h>
 #include <stdexcept>
 
-/* ============================================================================
-|                        TintinReporter constructors                          |
-============================================================================ */
+
+// TintinReporter - Constructors/Destructors                         
 
 TintinReporter::TintinReporter() 
     : TintinReporter(std::string(Config::LOG_FILE))
@@ -29,9 +28,7 @@ TintinReporter::TintinReporter(const std::string& logfile)
             
 }
 
-/* ============================================================================
-|                        TintinReporter public methods                        |
-============================================================================ */
+// TintinReporter - Public methods     
 
 void TintinReporter::log(LogLevel level, std::string_view msg)
 {
@@ -45,9 +42,7 @@ bool TintinReporter::isOpen() const
     return(m_file.is_open());
 }
 
-/* ============================================================================
-|                        TintinReporter private methods                       |
-============================================================================ */
+// TintinReporter - Private methods
 
 std::string TintinReporter::getCurrentTime() const
 {
