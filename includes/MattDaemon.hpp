@@ -15,7 +15,7 @@ class MattDaemon
         MattDaemon(MattDaemon&&) = delete;
         MattDaemon& operator=(MattDaemon&&) = delete;
         ~MattDaemon();
-
+        
         void init();
         void run();
 

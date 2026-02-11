@@ -14,12 +14,7 @@ Matt_daemon is a background service that accepts up to 3 simultaneous connection
 - Timestamped logging to `/var/log/matt_daemon/matt_daemon.log`
 - Clean shutdown on signals (SIGTERM, SIGINT, SIGQUIT, SIGHUP)
 - Remote shutdown via `quit` command
-
-## Requirements
-
-- Linux (kernel > 3.14)
-- GCC/Clang with C++17 support
-- Root privileges
+- Need Root privileges
 
 ## Installation
 
@@ -29,7 +24,9 @@ cd matt_daemon
 make
 ```
 
-## Usage
+## Usage (Native Root)
+
+Use this method if you have root access on your machine.
 
 ### Start the daemon
 
@@ -69,50 +66,61 @@ echo "quit" | nc localhost 4242
 sudo kill -SIGTERM $(pgrep Matt_daemon)
 ```
 
-## Docker
+## Usage (Docker)
 
-To avoid running as root on the host, you can use Docker.
+Use this method if you don't have root access or prefer containerized execution.
 
-### Build
+### Build image
 
 ```bash
 docker build -t matt_daemon .
 ```
 
-### Run
+### Start container
 
 ```bash
-# Start container (daemon starts automatically)
-docker run -d --name matt_daemon -p 4242:4242 matt_daemon
-
-# Connect from host
-nc localhost 4242
-
-# View logs from outside
-docker exec matt_daemon cat /var/log/matt_daemon/matt_daemon.log
-
-# Shell inside container
-docker exec -it matt_daemon bash
-
-# Stop
-docker stop matt_daemon
-docker rm matt_daemon
+sudo docker run -it --name matt_daemon -p 4242:4242 matt_daemon bash
 ```
 
-### Useful commands inside the container
+### Inside the container
 
 ```bash
-# View processes
+# Start daemon
+./Matt_daemon
+
+# Verify it's running
 ps aux | grep Matt
 
-# Check lock file
-ls -la /var/lock/
+# View logs
+cat /var/log/matt_daemon/matt_daemon.log
 
 # Follow logs in real time
 tail -f /var/log/matt_daemon/matt_daemon.log
+```
 
-# Connect locally
+### From host (another terminal)
+
+```bash
+# Connect to daemon
 nc localhost 4242
+
+# Send messages
+Hello world
+quit
+```
+
+### Container management
+
+```bash
+# Exit container (daemon keeps running inside)
+# Press Ctrl+P, Ctrl+Q
+
+# Re-enter container
+sudo docker exec -it matt_daemon bash
+
+# Stop and remove container
+sudo docker stop matt_daemon
+sudo docker rm matt_daemon
 ```
 
 ## Architecture
@@ -126,7 +134,7 @@ nc localhost 4242
 │ TintinReporter      MattDaemon              Config      │
 │ (logging)           (orchestrator)        (constants)   │
 │                          │                              │
-│            ┌─────────────┼─────────────┐                │
+│            ┌─────────────┼─────────────────────┐        │
 │            ▼                           ▼                │
 │        Daemonize                    Server              │
 │     (fork, setsid)            (TCP, select, signals)    │
@@ -203,14 +211,27 @@ main()
 
 **Log example:**
 ```
-[11/01/2026-14:34:58] [ INFO ] - Matt_daemon: Started.
-[11/01/2026-14:34:58] [ INFO ] - Matt_daemon: Creating server.
-[11/01/2026-14:34:58] [ INFO ] - Matt_daemon: Server created.
-[11/01/2026-14:34:58] [ INFO ] - Matt_daemon: Entering Daemon mode.
-[11/01/2026-14:34:58] [ INFO ] - Matt_daemon: started. PID: 6498.
-[11/01/2026-14:35:10] [ LOG ] - Matt_daemon: User input: Hello world
-[11/01/2026-14:35:15] [ INFO ] - Matt_daemon: Request quit.
-[11/01/2026-14:35:15] [ INFO ] - Matt_daemon: Quitting.
+[11/02/2026-11:20:04] [ INFO ] - Matt_daemon: Server object created
+[11/02/2026-11:20:04] [ INFO ] - Matt_daemon: Started.
+[11/02/2026-11:20:04] [ INFO ] - Matt_daemon: Root privileges confirmed
+[11/02/2026-11:20:04] [ INFO ] - Matt_daemon: Lock file created: /var/lock/matt_daemon.lock
+[11/02/2026-11:20:04] [ INFO ] - Matt_daemon: Creating server...
+[11/02/2026-11:20:04] [ INFO ] - Matt_daemon: Socket created
+[11/02/2026-11:20:04] [ INFO ] - Matt_daemon: Socket bound to port 4242
+[11/02/2026-11:20:04] [ INFO ] - Matt_daemon: Server listening on port 4242
+[11/02/2026-11:20:04] [ INFO ] - Matt_daemon: Signal handling configured (signalfd)
+[11/02/2026-11:20:04] [ INFO ] - Matt_daemon: Server created.
+[11/02/2026-11:20:04] [ INFO ] - Matt_daemon: Standard FDs redirected to /dev/null
+[11/02/2026-11:20:04] [ INFO ] - Matt_daemon: Entering Daemon mode.
+[11/02/2026-11:20:04] [ INFO ] - Matt_daemon: started. PID: 12.
+[11/02/2026-11:20:04] [ INFO ] - Matt_daemon: Server running
+[11/02/2026-11:20:43] [ INFO ] - Matt_daemon: Client connected from 172.17.0.1:47874
+[11/02/2026-11:20:47] [ LOG ] - Matt_daemon: User input: Hello world
+[11/02/2026-11:21:13] [ INFO ] - Matt_daemon: Request quit.
+[11/02/2026-11:21:13] [ INFO ] - Matt_daemon: All clients disconnected
+[11/02/2026-11:21:13] [ INFO ] - Matt_daemon: Server stopped
+[11/02/2026-11:21:13] [ INFO ] - Matt_daemon: Lock file removed
+[11/02/2026-11:21:13] [ INFO ] - Matt_daemon: Quitting.
 ```
 
 ## System Files

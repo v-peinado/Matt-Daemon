@@ -42,9 +42,7 @@ void MattDaemon::init()
     checkRoot();            // Check root privileges
     createLockFile();
 
-    m_logger.log(TintinReporter::LogLevel::Info, "Creating server.");
     m_server.init();
-    m_logger.log(TintinReporter::LogLevel::Info, "Server created.");
 
     m_initialized = true;
 }
