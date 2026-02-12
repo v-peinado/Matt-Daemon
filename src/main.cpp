@@ -20,16 +20,8 @@ int main()
         std::cerr << "Fatal error: " << e.what() << '\n';
         if (logger && logger->isOpen())
         {
-            try
-            {
-                logger->log(TintinReporter::LogLevel::Error, e.what());
-                logger->log(TintinReporter::LogLevel::Info, "Quitting.");
-            }
-            catch (...)
-            {
-                // Si falla el logging, ignorar silenciosamente
-                // Ya mostramos el error en cerr
-            }
+            logger->log(TintinReporter::LogLevel::Error, e.what());
+            logger->log(TintinReporter::LogLevel::Info, "Quitting.");
         }
         return 1;
     }
