@@ -60,14 +60,7 @@ std::string TintinReporter::getCurrentTime() const
 
 std::string_view TintinReporter::levelToString(LogLevel level) const
 {
-    switch (level)
-    {
-        case LogLevel::Info:    return "[ INFO ]";
-        case LogLevel::Log:     return "[ LOG ]";
-        case LogLevel::Warning: return "[ WARNING ]";
-        case LogLevel::Error:   return "[ ERROR ]";
-        default:                return "[ UNKNOWN ]";
-    }
+    return m_lvl_names[static_cast<int>(level)];
 }
 
 void TintinReporter::createLogDirectory()

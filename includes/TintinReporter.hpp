@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include <fstream>
+#include <array>
 #include <string_view>
 
 class TintinReporter
@@ -30,6 +31,7 @@ class TintinReporter
 
         std::string     m_path_logfile;
         std::ofstream   m_file;
+        static constexpr std::array<std::string_view, 4> m_lvl_names {"[INFO]", "[LOG]", "[WARNING]", "[ERROR]"};
 
         [[nodiscard]] std::string getCurrentTime() const;
         [[nodiscard]] std::string_view levelToString(LogLevel level) const;
