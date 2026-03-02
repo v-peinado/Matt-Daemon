@@ -62,3 +62,11 @@ void Daemonize::daemonize(TintinReporter& logger)
     logger.log(TintinReporter::LogLevel::Info, "Standard FDs redirected to /dev/null");       
     logger.log(TintinReporter::LogLevel::Info, "Entering Daemon mode.");
 }
+
+void Daemonize::requireRoot()
+{
+    if (getuid() != 0)
+    {
+        throw std::runtime_error("Matt_daemon must be run as root (current UID: " + std::to_string(getuid()) + ", expected: 0)");
+    }
+}

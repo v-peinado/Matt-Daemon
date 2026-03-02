@@ -39,7 +39,6 @@ MattDaemon::~MattDaemon()
 void MattDaemon::init()
 {
     m_logger.log(TintinReporter::LogLevel::Info, "Started.");
-    checkRoot();            // Check root privileges
     createLockFile();
 
     m_server.init();
@@ -57,18 +56,6 @@ void MattDaemon::run()
     m_logger.log(TintinReporter::LogLevel::Info, "started. PID: " + std::to_string(getpid()) + ".");
     
     m_server.run();
-}
-
-
-void MattDaemon::checkRoot()  
-{
-    if (getuid() != 0)
-    {
-        m_logger.log(TintinReporter::LogLevel::Error, "Must be run as root (current UID: " + std::to_string(getuid()) + ")");
-        throw std::runtime_error("Must be run as root");
-    }
-    
-    m_logger.log(TintinReporter::LogLevel::Info, "Root privileges confirmed");
 }
 
 void MattDaemon::createLockFile()  

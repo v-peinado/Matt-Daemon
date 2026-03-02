@@ -6,7 +6,6 @@
 #include <sys/stat.h>
 #include <stdexcept>
 
-
 // TintinReporter - Constructors/Destructors                         
 
 TintinReporter::TintinReporter() 

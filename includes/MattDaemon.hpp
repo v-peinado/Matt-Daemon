@@ -27,7 +27,6 @@ class MattDaemon
         bool                m_initialized;
 
         // Initialization helpers
-        void checkRoot();
         void createLockFile();
         void removeLockFile();
 };

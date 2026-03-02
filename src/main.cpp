@@ -3,12 +3,14 @@
 #include <iostream>
 #include <exception>
 #include <memory>
+#include "Daemonize.hpp" 
 
 int main()
 {
     std::unique_ptr<TintinReporter> logger;
     try
     {
+        Daemonize::requireRoot();
         logger = std::make_unique<TintinReporter>();
         MattDaemon daemon(*logger);
         daemon.init();
