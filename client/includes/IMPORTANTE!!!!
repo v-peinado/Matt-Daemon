@@ -1,0 +1,31 @@
+"If a signal handler accesses a variable, that variable must be declared volatile sig_atomic_t"
+
+
+Por Qué POSIX Obliga a volatile en Signal Handlers
+El estándar POSIX requiere que las variables compartidas entre el código principal y los signal handlers sean declaradas como volatile sig_atomic_t porque los signal handlers se ejecutan de forma asíncrona - el kernel puede interrumpir el programa en cualquier momento y ejecutar el handler en un contexto diferente. Sin volatile, el compilador asume que las variables no cambian "mágicamente" entre instrucciones y puede optimizar su lectura cargándola una sola vez en un registro. Esto crea un problema: el programa principal lee running y la guarda en un registro, el signal handler modifica running en memoria, pero el loop principal sigue usando el valor viejo del registro, causando un loop infinito. volatile le dice al compilador "esta variable puede cambiar sin que yo lo haga explícitamente, no optimices su lectura", forzándolo a releer desde memoria en cada acceso. Además, sig_atomic_t garantiza que la lectura/escritura ocurre en una sola instrucción de CPU indivisible, previniendo que el signal handler interrumpa a mitad de una operación y corrompa el valor. Es por esto que POSIX declara como comportamiento indefinido acceder a cualquier variable que no sea volatile sig_atomic_t desde un signal handler.
+Por Qué el Servidor NO Necesita volatile
+En contraste, el servidor no necesita volatile porque usa signalfd() para convertir las señales en file descriptors que se procesan síncronamente dentro del loop principal con select(). No hay signal handlers asíncronos que interrumpan el código - las señales se bloquean con sigprocmask(SIG_BLOCK) y se leen como datos normales cuando select() detecta actividad en m_signal_fd. Todo ocurre en un único flujo de ejecución secuencial: el thread principal lee m_running, llama select() (que es una syscall y actúa como barrera de optimización), procesa la señal si hay una llamando handleSignal() desde el mismo contexto, y vuelve a leer m_running en la siguiente iteración. No hay concurrencia ni acceso desde múltiples contextos - solo el thread principal toca m_running, por lo que el compilador, aunque optimice, debe releer la variable después de cada syscall porque no puede asumir que funciones externas (como select()) no modifiquen memoria global. Por tanto, bool m_running sin volatile es completamente correcto y seguro incluso con -O2 o -O3.
+
+
+
+¿Qué es una Barrera?
+Una barrera de optimización es algo que el compilador no puede ver a través.
+cppwhile (m_running) {
+    // Código local → compilador puede optimizar
+    int x = 10;
+    int y = x + 5;  // Puede optimizar a y = 15
+    
+    select(...);  // ← BARRERA: compilador NO sabe qué hace
+    
+    // Después de la barrera, debe releer m_running
+}
+Syscalls son Barreras
+cpp// select() se declara así en <sys/select.h>:
+extern int select(int nfds, fd_set *readfds, ...);
+//     ^^^^^^
+//     Externa - compilador NO ve su implementación
+El compilador asume:
+
+Una función externa PUEDE modificar memoria global
+Debe releer variables después de la llamada
+NO puede optimizar la lectura de m_running
