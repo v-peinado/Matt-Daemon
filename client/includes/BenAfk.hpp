@@ -1,5 +1,6 @@
 #pragma once
 #include "ArgParser.hpp"
+#include "Connection.hpp"
 #include <csignal>
 #include <string>
 
@@ -20,6 +21,8 @@ class BenAfk
         void run();
 
     private:
+
+        Connection m_connection;
 
         void setupSignals();
         static volatile sig_atomic_t s_running;
