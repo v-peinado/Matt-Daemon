@@ -1,9 +1,15 @@
 #include "ArgParser.hpp"
+#include <vector>
+#include <string>
 
 ArgParser::parseStruct ArgParser::parse(int argc, char** argv)
 {
-    (void)argc;
-    (void)argv;
+    if(argc > 1)
+    {
+        std::vector<std::string> args(argv + 1, argv + argc);
+        if(argc == 2 && args[0] == "--help")
+            printHelp();
+    }
     parseStruct returnStruct;
     return returnStruct;
 }
