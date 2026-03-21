@@ -1,6 +1,6 @@
 #pragma once
-
-
+#include <string>
+#include <exception>
 
 class Connection
 {
@@ -15,6 +15,11 @@ class Connection
         Connection& operator=(Connection&&) = delete;
         ~Connection();
 
+        void connect();
+        void disconnect();
+        bool isConnected() const;
+        void send(const std::string& msg);
+
     private:
 
         std::string     m_host;
@@ -22,4 +27,5 @@ class Connection
         int             m_socket;
         bool            m_connected;
 
+        void createSocket();
 };
