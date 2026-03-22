@@ -5,6 +5,7 @@
 #include <netinet/in.h>  // sockaddr_in
 #include <arpa/inet.h>   // inet_pton
 #include <cstring>       // memset
+#include <iostream>
 
 // Constructors
 
@@ -48,5 +49,28 @@ void Connection::connectTo()
     if (connect(m_socket, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0)
         throw std::runtime_error("connect() fail");
     m_connected = true;
-} 
+}
+
+void Connection::disconnect()
+{
+    if (m_socket < 0)  // If socket is setted -1 (not create d)
+        return;
+    close(m_socket);
+    m_socket = -1;
+    m_connected = false;
+}
+
+bool Connection::isConnected() const
+{
+    return m_connected;
+}
+
+void Connection::sendMsg(const std::string& message)
+{
+    if (!m_connected)
+        throw std::runtime_error("Not connected");
+    if (send(m_socket, message.c_str(), message.length(), 0) < 0)  // Maybe need loop for correct send
+        throw std::runtime_error("send() fail");
+}
+
 
