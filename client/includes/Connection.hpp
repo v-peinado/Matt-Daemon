@@ -15,10 +15,10 @@ class Connection
         Connection& operator=(Connection&&) = delete;
         ~Connection();
 
-        void connect();
+        void connectTo();
         void disconnect();
         bool isConnected() const;
-        void send(const std::string& msg);
+        void sendMsg(const std::string& msg);
 
     private:
 
