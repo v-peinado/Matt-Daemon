@@ -35,11 +35,15 @@ void Connection::createSocket()
 
 void Connection::connectTo()
 {
+    createSocket();
+    
     struct sockaddr_in server_addr;  // Destiny 127.0.0.0::4242
     memset(&server_addr, 0, sizeof(server_addr));
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = htons(m_port);
-    server_addr.sin_addr.s_addr = inet_pton(AF_INET, m_host.c_str(), &server_addr.sin_addr);
+
+    if (inet_pton(AF_INET, m_host.c_str(), &server_addr.sin_addr) <= 0)
+        throw std::runtime_error("inet_pton() failed");
 
     if (connect(m_socket, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0)
         throw std::runtime_error("connect() fail");

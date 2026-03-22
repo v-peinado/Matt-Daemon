@@ -29,3 +29,19 @@ El compilador asume:
 Una función externa PUEDE modificar memoria global
 Debe releer variables después de la llamada
 NO puede optimizar la lectura de m_running
+
+
+
+En consecuencia una sognal crea una concurrencia que puede acarrear un data race.
+
+Una señal (signal) introduce concurrencia asíncrona al interrumpir la ejecución normal del programa en cualquier momento.
+Si el handler y el flujo principal acceden a la misma variable sin sincronización, se producen accesos concurrentes no controlados.
+Esto puede dar lugar a una data race, con comportamiento indefinido.
+
+
+Una race condition ocurre cuando el resultado de un programa depende del orden o timing de ejecución entre varias operaciones concurrentes.
+No requiere necesariamente memoria compartida ni acceso simultáneo a bajo nivel.
+Una data race es un caso específico donde múltiples ejecuciones acceden a la misma memoria, al menos una escribe, y no hay sincronización.
+Las data races suelen implicar comportamiento indefinido en lenguajes como C o C++.
+Toda data race es una race condition, pero no toda race condition es una data race.
+La diferencia clave es: lógica y orden (race condition) vs acceso inseguro a memoria compartida (data race).
