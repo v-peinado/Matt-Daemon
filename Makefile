@@ -4,7 +4,7 @@ CLIENT_NAME = Ben_AFK
 CXX         = c++
 CXXFLAGS    = -Wall -Wextra -Werror -std=c++20
 
-# Directories (SOLO ESTO CAMBIA)
+# Directories
 SERVER_SRCDIR    = server/src
 SERVER_INCDIR    = server/includes
 SERVER_OBJDIR    = server/objs
@@ -22,9 +22,9 @@ SERVER_SRCS = $(SERVER_SRCDIR)/TintinReporter.cpp \
 
 # Client sources
 CLIENT_SRCS = $(CLIENT_SRCDIR)/Connection.cpp \
-              $(CLIENT_SRCDIR)/CommandParser.cpp \
-              $(CLIENT_SRCDIR)/Client.cpp \
-              $(CLIENT_SRCDIR)/main_client.cpp
+              $(CLIENT_SRCDIR)/BenAfk.cpp \
+              $(CLIENT_SRCDIR)/ArgParser.cpp \
+              $(CLIENT_SRCDIR)/main.cpp
 
 # Object files
 SERVER_OBJS = $(SERVER_SRCS:$(SERVER_SRCDIR)/%.cpp=$(SERVER_OBJDIR)/%.o)
