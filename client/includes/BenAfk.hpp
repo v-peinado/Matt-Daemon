@@ -27,6 +27,6 @@ class BenAfk
         Connection m_connection;
 
         void setupSignals();
-        bool isRunning() const;
+        [[nodiscard]] bool isRunning() const;
         void mainLoop();
 };

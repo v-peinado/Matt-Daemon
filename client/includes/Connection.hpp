@@ -17,7 +17,7 @@ class Connection
 
         void connectTo();
         void disconnect();
-        bool isConnected() const;
+        [[nodiscard]] bool isConnected() const;
         void sendMsg(const std::string& msg);
 
     private:
