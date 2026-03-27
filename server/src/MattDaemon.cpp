@@ -1,6 +1,5 @@
 #include "MattDaemon.hpp"
 #include "Daemonize.hpp"
-#include "Config.hpp"
 #include <unistd.h>
 #include <sys/file.h>
 #include <fcntl.h>
@@ -11,18 +10,13 @@
 
 // MattDaemon - Constructor/Destructor
 
-MattDaemon::MattDaemon(TintinReporter& logger)
-    : MattDaemon(logger, Config::SERVER_PORT)
-{
-}
-
-MattDaemon::MattDaemon(TintinReporter& logger, int port)
-    : m_logger(logger)
-    , m_server(port, m_logger)
+MattDaemon::MattDaemon(const Config& cfg, const Server::Config& srv_cfg, TintinReporter& logger)
+    : m_lock_file(cfg.lock_file)
+    , m_logger(logger)
+    , m_server(srv_cfg, logger)
     , m_lock_fd(-1)
     , m_initialized(false)
-{
-}
+{}
 
 MattDaemon::~MattDaemon()
 {
@@ -61,7 +55,7 @@ void MattDaemon::run()
 void MattDaemon::createLockFile()  
 {
     // Try to open/create lock file
-    m_lock_fd = open(std::string(Config::LOCK_FILE).c_str(), O_CREAT | O_RDWR, 0644);
+    m_lock_fd = open(m_lock_file.c_str(), O_CREAT | O_RDWR, 0644);
     
     if (m_lock_fd < 0)
     {
@@ -76,7 +70,7 @@ void MattDaemon::createLockFile()
         if (errno == EWOULDBLOCK)
         {
             std::cerr << "Error: Another instance is already running" << std::endl;
-            std::cerr << "Can't open :" << Config::LOCK_FILE << std::endl;
+            std::cerr << "Can't open :" << m_lock_file << std::endl;
 
             m_logger.log(TintinReporter::LogLevel::Error, "Error file locked.");
             
@@ -94,7 +88,7 @@ void MattDaemon::createLockFile()
         throw std::runtime_error("flock() failed");
     }
 
-    m_logger.log(TintinReporter::LogLevel::Info, "Lock file created: " + std::string(Config::LOCK_FILE));
+    m_logger.log(TintinReporter::LogLevel::Info, "Lock file created: " + m_lock_file);
 }
 
 void MattDaemon::removeLockFile()
@@ -104,7 +98,7 @@ void MattDaemon::removeLockFile()
         flock(m_lock_fd, LOCK_UN);
         close(m_lock_fd);
         m_lock_fd = -1;
-        unlink(std::string(Config::LOCK_FILE).c_str());
+        unlink(m_lock_file.c_str());
         m_logger.log(TintinReporter::LogLevel::Info, "Lock file removed");
     }
 }

@@ -1,18 +1,37 @@
 #include "MattDaemon.hpp"
-#include "Config.hpp"
+#include "Daemonize.hpp"
 #include <iostream>
 #include <exception>
-#include <memory>
-#include "Daemonize.hpp" 
+#include <optional>
 
 int main()
 {
-    std::unique_ptr<TintinReporter> logger;
+    std::optional<TintinReporter> logger;
     try
     {
         Daemonize::requireRoot();
-        logger = std::make_unique<TintinReporter>();
-        MattDaemon daemon(*logger);
+        
+        // Configuraciones de Matt_daemon
+        TintinReporter::Config logger_config {
+            .log_file = "/var/log/matt_daemon/matt_daemon.log",
+            .application_name = "Matt_daemon",
+            .max_size = 10 * 1024 * 1024,
+            .max_age_days = 30,
+        };
+        
+        Server::Config server_config {
+            .port = 4242,
+            .max_clients = 3,
+            .buffer_size = 1024
+        };
+        
+        MattDaemon::Config daemon_config {
+            .lock_file = "/var/lock/matt_daemon.lock"
+        };
+        
+        logger.emplace(logger_config);
+        MattDaemon daemon(daemon_config, server_config, *logger);
+        
         daemon.init();
         daemon.run();
         return 0;

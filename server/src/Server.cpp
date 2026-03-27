@@ -1,5 +1,5 @@
 #include "Server.hpp"
-#include "Config.hpp"
+#include <vector>
 #include "TintinReporter.hpp"
 #include <unistd.h>
 #include <sys/socket.h>
@@ -12,13 +12,10 @@
 
 // Server - Constructor/Destructor
 
-Server::Server(TintinReporter& logger)
-    : Server(Config::SERVER_PORT, logger)
-{
-}
-
-Server::Server(int port, TintinReporter& logger)
-    : m_port(port)
+Server::Server(const Config& cfg, TintinReporter& logger)
+    : m_port(cfg.port)
+    , m_max_clients(cfg.max_clients)
+    , m_buffer_size(cfg.buffer_size)
     , m_server_fd(-1)
     , m_signal_fd(-1)
     , m_logger(logger)
@@ -71,13 +68,13 @@ void Server::createSocket()
 
 void Server::bindSocket()
 {
-    struct sockaddr_in serverAddr;
-    std::memset(&serverAddr, 0, sizeof(serverAddr));
-    serverAddr.sin_family = AF_INET;
-    serverAddr.sin_addr.s_addr = INADDR_ANY;
-    serverAddr.sin_port = htons(m_port);
+    struct sockaddr_in server_addr;
+    std::memset(&server_addr, 0, sizeof(server_addr));
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_addr.s_addr = INADDR_ANY;
+    server_addr.sin_port = htons(m_port);
 
-    if (bind(m_server_fd, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) < 0)
+    if (bind(m_server_fd, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0)
     {
         close(m_server_fd);
         m_server_fd = -1;
@@ -249,8 +246,8 @@ void Server::acceptNewClient()
 
 void Server::handleClientData(int clientFd)
 {
-    char buffer[Config::BUFFER_SIZE]{};
-    ssize_t bytesRead = recv(clientFd, buffer, sizeof(buffer) - 1, 0);
+    std::vector<char> buffer(m_buffer_size);
+    ssize_t bytesRead = recv(clientFd, buffer.data(), buffer.size() - 1, 0);
     
     if (bytesRead <= 0)
     {
@@ -262,7 +259,7 @@ void Server::handleClientData(int clientFd)
         return;
     }
 
-    std::string message(buffer, bytesRead);
+    std::string message(buffer.data(), bytesRead);
 
     while (!message.empty() && (message.back() == '\n' || message.back() == '\r'))  // Win and telnet too
         message.pop_back();
@@ -286,9 +283,8 @@ void Server::disconnectClient(int clientFd)
 
 bool Server::canAcceptClient() const
 {
-    return m_client_fds.size() < static_cast<size_t>(Config::MAX_CLIENTS);
+    return m_client_fds.size() < static_cast<size_t>(m_max_clients);
 }
-
 // Message processing
 
 void Server::processMessage(int clientFd, const std::string& message)

@@ -6,8 +6,12 @@ class MattDaemon
 {
     public:
 
-        explicit MattDaemon(TintinReporter& logger);
-        MattDaemon(TintinReporter& logger, int port);
+        struct Config
+        {
+            std::string lock_file = "/var/lock/daemon.lock";
+        };
+
+        MattDaemon(const Config& cfg, const Server::Config& srv_cfg, TintinReporter& logger);
 
         MattDaemon() = delete;
         MattDaemon(const MattDaemon&) = delete;
@@ -21,6 +25,7 @@ class MattDaemon
 
     private:
 
+        std::string         m_lock_file;
         TintinReporter&     m_logger;
         Server              m_server;
         int                 m_lock_fd;

@@ -10,8 +10,15 @@ class Server
 {
     public:
 
+        struct Config 
+        {
+            int port = 4242;
+            int max_clients = 10;
+            int buffer_size = 1024;
+        };
+
         Server() = delete;
-        explicit Server(TintinReporter& logger);
+        Server(const Config& cfg, TintinReporter& logger);
         Server(int port, TintinReporter& logger);
         Server(const Server&) = delete;
         Server& operator=(const Server&) = delete;
@@ -27,6 +34,8 @@ class Server
     private:
 
         int                 m_port;
+        int                 m_max_clients;
+        int                 m_buffer_size;
         int                 m_server_fd;
         int                 m_signal_fd;
         TintinReporter&     m_logger;
@@ -42,7 +51,7 @@ class Server
 
         // Signal handler
         void handleSignal();
-        [[nodiscard]] std::string_view getSignalName(int signum);
+        std::string_view getSignalName(int signum);
 
         // Client management
         void acceptNewClient();
