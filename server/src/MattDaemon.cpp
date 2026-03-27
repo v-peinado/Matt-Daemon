@@ -16,7 +16,9 @@ MattDaemon::MattDaemon(const Config& cfg, const Server::Config& srv_cfg, TintinR
     , m_server(srv_cfg, logger)
     , m_lock_fd(-1)
     , m_initialized(false)
-{}
+{
+    createLockFile();
+}
 
 MattDaemon::~MattDaemon()
 {
@@ -33,7 +35,6 @@ MattDaemon::~MattDaemon()
 void MattDaemon::init()
 {
     m_logger.log(TintinReporter::LogLevel::Info, "Started.");
-    createLockFile();
 
     m_server.init();
 
