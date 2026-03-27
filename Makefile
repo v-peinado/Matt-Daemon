@@ -43,7 +43,6 @@ all: $(DAEMON_NAME)
 $(DAEMON_NAME): $(SERVER_OBJS)
 	@echo "$(GREEN)Linking $(DAEMON_NAME)...$(RESET)"
 	@$(CXX) $(CXXFLAGS) $(SERVER_OBJS) -o $(DAEMON_NAME)
-	@echo "$(GREEN)✓ Server ready$(RESET)"
 
 $(SERVER_OBJDIR)/%.o: $(SERVER_SRCDIR)/%.cpp | $(SERVER_OBJDIR)
 	@echo "Compiling $<..."

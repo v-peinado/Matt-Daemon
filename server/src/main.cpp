@@ -2,11 +2,11 @@
 #include "Daemonize.hpp"
 #include <iostream>
 #include <exception>
-#include <optional>
+#include <memory>
 
 int main()
 {
-    std::optional<TintinReporter> logger;
+    std::unique_ptr<TintinReporter> logger;
     try
     {
         Daemonize::requireRoot();
@@ -29,7 +29,7 @@ int main()
             .lock_file = "/var/lock/matt_daemon.lock"
         };
         
-        logger.emplace(logger_config);
+        logger = std::make_unique<TintinReporter>(logger_config);
         MattDaemon daemon(daemon_config, server_config, *logger);
         
         daemon.init();
