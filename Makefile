@@ -23,7 +23,6 @@ SERVER_SRCS = $(SERVER_SRCDIR)/TintinReporter.cpp \
 # Client sources
 CLIENT_SRCS = $(CLIENT_SRCDIR)/Connection.cpp \
               $(CLIENT_SRCDIR)/BenAfk.cpp \
-              $(CLIENT_SRCDIR)/ArgParser.cpp \
               $(CLIENT_SRCDIR)/main.cpp
 
 # Object files

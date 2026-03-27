@@ -1,5 +1,4 @@
 #pragma once
-#include "ArgParser.hpp"
 #include "Connection.hpp"
 #include <csignal>
 #include <string>
@@ -8,7 +7,13 @@ class BenAfk
 {
     public:
 
-        BenAfk(const ArgParser::parseStruct& arguments);
+        struct Config 
+        {
+            std::string     host = "127.0.0.1";
+            int             port = 4242;
+        };
+
+        BenAfk(const Config& cfg);
         ~BenAfk() = default;
 
         BenAfk() = delete;

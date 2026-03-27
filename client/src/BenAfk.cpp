@@ -15,8 +15,8 @@ static void signalHandler(int signum)
 
 // Constructors
 
-BenAfk::BenAfk(const ArgParser::parseStruct& arguments)
-    : m_connection(arguments.host, arguments.port)
+BenAfk::BenAfk(const BenAfk::Config& cfg)
+    : m_connection(cfg.host, cfg.port)
 {    
 }
 

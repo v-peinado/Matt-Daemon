@@ -1,14 +1,13 @@
 #include <exception>
 #include <iostream>
 #include "BenAfk.hpp"
-#include "ArgParser.hpp"
 
-int main(int argc, char **argv)
+int main()
 {
     try
     {
-        auto options = ArgParser::parse(argc, argv);
-        BenAfk client(options);
+        BenAfk::Config config; 
+        BenAfk client(config);
         client.init();
         client.run();
     }
