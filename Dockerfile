@@ -16,8 +16,8 @@ WORKDIR /app
 
 # Copiar solo archivos necesarios
 COPY Makefile .
-COPY includes/ includes/
-COPY src/ src/
+COPY client/ client/
+COPY server/ server/
 
 # Compilar automáticamente
 RUN make re
