@@ -9,12 +9,12 @@ class BenAfk
 
         struct Config 
         {
-            std::string     host = "127.0.0.1";
-            int             port = 4242;
+            std::string host = "127.0.0.1";
+            int port = 4242;
         };
 
         BenAfk(const Config& cfg);
-        ~BenAfk() = default;
+        ~BenAfk();
 
         BenAfk() = delete;
         BenAfk(const BenAfk&) = delete;
@@ -22,16 +22,20 @@ class BenAfk
         BenAfk& operator=(const BenAfk&) = delete;
         BenAfk& operator=(BenAfk&&) = delete;
 
-        static volatile sig_atomic_t s_running;
-
         void init();
         void run();
 
     private:
 
         Connection m_connection;
+        int m_signal_fd;
+        bool m_running;
 
         void setupSignals();
-        [[nodiscard]] bool isRunning() const;
         void mainLoop();
+        void handleSignal();
+        void handleUserInput();
+        [[nodiscard]] bool checkServerConnection(int socket_fd);
+        void setupFdSet(fd_set& read_fds, int socket_fd);
+        [[nodiscard]] int getMaxFd(int socket_fd) const;
 };

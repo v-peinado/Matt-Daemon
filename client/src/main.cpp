@@ -6,7 +6,8 @@ int main()
 {
     try
     {
-        BenAfk::Config config; 
+        BenAfk::Config config;
+        
         BenAfk client(config);
         client.init();
         client.run();
