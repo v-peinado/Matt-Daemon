@@ -1,9 +1,7 @@
-# Dockerfile para Matt_daemon
-# Testing environment - Ubuntu 24.04
-
+# Dockerfile - Matt_daemon
 FROM ubuntu:24.04
 
-# Instalar dependencias mínimas
+# Dependencias básicas
 RUN apt-get update && apt-get install -y \
     g++ \
     make \
@@ -11,20 +9,20 @@ RUN apt-get update && apt-get install -y \
     procps \
     && rm -rf /var/lib/apt/lists/*
 
-# Directorio de trabajo
+# Copiar código
 WORKDIR /app
-
-# Copiar solo archivos necesarios
 COPY Makefile .
 COPY client/ client/
 COPY server/ server/
 
-# Compilar automáticamente
-RUN make re
+# Compilar
+RUN make bonus
 
-# Exponer puerto 4242
+# Crear directorios
+RUN mkdir -p /var/log/matt_daemon /var/lock
+
+# Exponer puerto
 EXPOSE 4242
 
-# Ejecutar daemon por defecto
-# Para modo interactivo: docker run -it matt_daemon /bin/bash
-CMD ["./Matt_daemon"]
+# Shell por defecto
+CMD ["/bin/bash"]
