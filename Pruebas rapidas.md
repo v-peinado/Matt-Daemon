@@ -39,14 +39,30 @@
 
 Terminal 2: Ver estado
 ls -l /var/lock/matt_daemon.lock
-rw-r--r-- 1 root root 0 ...  ← ¡Archivo SIGUE existiendo!
+rw-r--r-- 1 root root 0 el archivo sigue existiendo
 
 sudo lslocks | grep matt_daemon
-(vacío)  ← ¡Pero lock DESAPARECIÓ!
+(vacío) ..... pero no desaparece el fichero
 
 significa que el kernel libera el archivo lock automaticamente cuando el proceso muere
 
 
 probasr el rotate en logs
 while true; do echo "Message XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX $(date +%s%N)"; sleep 0.01; done | nc localhost 4242
+
+
+
+VErificar el daemon
+
+ps -o pid,ppid,pgid,sid,tty,stat,cmd -p $(pgrep Matt_daemon)
+
+
+Verificar que su directorio de trabajo es /
+
+sudo pwdx $(pgrep Matt_daemon)
+
+
+Verificar sockets activos y que se limpian bien
+
+sudo lsof -p $(pgrep Matt_daemon) | grep TCP
 
