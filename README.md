@@ -1,271 +1,193 @@
 # Matt_daemon
 
-Unix daemon that listens for TCP connections and logs messages to a file.
+[![Language](https://img.shields.io/badge/language-C%2B%2B20-blue.svg)](https://isocpp.org/)
 
-## Description
+A production-grade UNIX daemon that listens for TCP connections on port 4242 and logs messages with timestamps. Implements proper daemonization with double fork, signal handling via `signalfd`, single-instance enforcement with `flock`, and I/O multiplexing with `select()`.
 
-Matt_daemon is a background service that accepts up to 3 simultaneous connections on port 4242 and stores all received messages with timestamps. It implements the classic Unix daemonization pattern with double fork, signal handling via signalfd, and guarantees single-instance through lock file.
+## Quick Start
 
-## Features
-
-- Background execution (real daemon, not a process with `&`)
-- Single-instance via lock file with `flock()`
-- Up to 3 simultaneous clients
-- Timestamped logging to `/var/log/matt_daemon/matt_daemon.log`
-- Clean shutdown on signals (SIGTERM, SIGINT, SIGQUIT, SIGHUP)
-- Remote shutdown via `quit` command
-- Need Root privileges
-
-## Installation
-
+### Build
 ```bash
-git clone <repository>
-cd matt_daemon
-make
+make              # Build daemon only
+make bonus        # Build daemon + client
 ```
 
-## Usage (Native Root)
-
-Use this method if you have root access on your machine.
-
-### Start the daemon
-
+### Run (requires root)
 ```bash
 sudo ./Matt_daemon
 ```
 
-### Connect and send messages
-
+### Connect
 ```bash
+# Using netcat
 nc localhost 4242
-Hello world
-This message gets logged
-quit
+
+# Or using the included client
+./Ben_AFK
 ```
 
-### Check status
-
+### Stop
 ```bash
-# Check if running
-ps aux | grep Matt_daemon
-
-# Check lock file
-ls -l /var/lock/matt_daemon.lock
-
-# View logs
-tail -f /var/log/matt_daemon/matt_daemon.log
-```
-
-### Stop the daemon
-
-```bash
-# Option 1: Send quit
 echo "quit" | nc localhost 4242
-
-# Option 2: Signal
-sudo kill -SIGTERM $(pgrep Matt_daemon)
+# or
+sudo pkill -SIGTERM Matt_daemon
 ```
 
-## Usage (Docker)
+## Features
 
-Use this method if you don't have root access or prefer containerized execution.
+### Server (Matt_daemon)
+- ✅ True daemonization (double fork, setsid, FD redirection)
+- ✅ Single instance via `flock()` on `/var/lock/matt_daemon.lock`
+- ✅ Handles up to 3 simultaneous TCP connections
+- ✅ Advanced logging with automatic rotation and cleanup
+- ✅ Signal handling (SIGTERM, SIGINT, SIGQUIT, SIGHUP)
+- ✅ I/O multiplexing with `select()`
 
-### Build image
+### Client (Ben_AFK)
+- ✅ Interactive TCP client with signal handling
+- ✅ Connection monitoring and auto-detection of server shutdown
+- ✅ I/O multiplexing for stdin and socket
+- ✅ Clean graceful exit
 
-```bash
-docker build -t matt_daemon .
-```
-
-### Start container
-
-```bash
-sudo docker run -it --name matt_daemon -p 4242:4242 matt_daemon bash
-```
-
-### Inside the container
-
-```bash
-# Start daemon
-./Matt_daemon
-
-# Verify it's running
-ps aux | grep Matt
-
-# View logs
-cat /var/log/matt_daemon/matt_daemon.log
-
-# Follow logs in real time
-tail -f /var/log/matt_daemon/matt_daemon.log
-```
-
-### From host (another terminal)
-
-```bash
-# Connect to daemon
-nc localhost 4242
-
-# Send messages
-Hello world
-quit
-```
-
-### Container management
-
-```bash
-# Exit container (daemon keeps running inside)
-# Press Ctrl+P, Ctrl+Q
-
-# Re-enter container
-sudo docker exec -it matt_daemon bash
-
-# Stop and remove container
-sudo docker stop matt_daemon
-sudo docker rm matt_daemon
-```
+### Logger (TintinReporter)
+- ✅ Timestamped entries: `[DD/MM/YYYY-HH:MM:SS]`
+- ✅ Automatic rotation at 10 MB
+- ✅ Auto-cleanup of logs older than 30 days
+- ✅ Four severity levels (INFO, LOG, WARNING, ERROR)
 
 ## Architecture
 
+### Server
 ```
-┌─────────────────────────────────────────────────────────┐
-│                        main()                           │
-│                          │                              │
-│    ┌─────────────────────┼─────────────────────┐        │
-│    ▼                     ▼                     ▼        │
-│ TintinReporter      MattDaemon              Config      │
-│ (logging)           (orchestrator)        (constants)   │
-│                          │                              │
-│            ┌─────────────┼─────────────────────┐        │
-│            ▼                           ▼                │
-│        Daemonize                    Server              │
-│     (fork, setsid)            (TCP, select, signals)    │
-└─────────────────────────────────────────────────────────┘
+main() → TintinReporter (logging + rotation)
+      → MattDaemon (lock file + orchestration)
+      → Server (TCP + select + signalfd)
+      → Daemonize (fork + setsid + FD redirect)
 ```
 
-| Component | Responsibility |
-|-----------|----------------|
-| `TintinReporter` | Timestamped log writing |
-| `MattDaemon` | Root verification, lock file, lifecycle |
-| `Server` | TCP socket, I/O multiplexing with select(), signals |
-| `Daemonize` | Double fork, setsid, FD redirection |
-| `Config` | Constants: port, paths, limits |
-
-## Execution Flow
-
+### Client
 ```
-main()
-  │
-  ├─► TintinReporter()           # Create logger
-  │     └─► mkdir(), open()
-  │
-  ├─► MattDaemon::init()
-  │     ├─► getuid()             # Verify root
-  │     ├─► open(), flock()      # Lock file
-  │     └─► Server::init()
-  │           ├─► socket()
-  │           ├─► bind()
-  │           ├─► listen()
-  │           └─► signalfd()
-  │
-  └─► MattDaemon::run()
-        ├─► Daemonize::daemonize()
-        │     ├─► fork() + fork()
-        │     ├─► setsid()
-        │     ├─► chdir("/")
-        │     └─► dup2() → /dev/null
-        │
-        └─► Server::run()        # Main loop
-              └─► select()
-                    ├─► signal  → shutdown
-                    ├─► new client → accept()
-                    └─► data → recv() → log
+main() → BenAfk (orchestrator + select)
+      → Connection (TCP socket)
+      → signalfd (SIGINT/SIGTERM)
 ```
 
-## Signals
+## Components
 
-| Signal | Behavior |
-|--------|----------|
-| SIGTERM | Log + clean shutdown |
-| SIGINT | Log + clean shutdown |
-| SIGQUIT | Log + clean shutdown |
-| SIGHUP | Log + clean shutdown |
-| SIGKILL | Immediate termination (not catchable) |
-| SIGSTOP | Immediate pause (not catchable) |
-
-## Logs
-
-**Location:** `/var/log/matt_daemon/matt_daemon.log`
-
-**Format:**
-```
-[DD/MM/YYYY-HH:MM:SS] [ LEVEL ] - Matt_daemon: message
-```
-
-**Levels:**
-
-| Level | Usage |
-|-------|-------|
-| INFO | System events (startup, shutdown, connections) |
-| LOG | User messages |
-| WARNING | Non-critical issues |
-| ERROR | Critical errors |
-
-**Log example:**
-```
-[11/02/2026-11:20:04] [ INFO ] - Matt_daemon: Server object created
-[11/02/2026-11:20:04] [ INFO ] - Matt_daemon: Started.
-[11/02/2026-11:20:04] [ INFO ] - Matt_daemon: Root privileges confirmed
-[11/02/2026-11:20:04] [ INFO ] - Matt_daemon: Lock file created: /var/lock/matt_daemon.lock
-[11/02/2026-11:20:04] [ INFO ] - Matt_daemon: Creating server...
-[11/02/2026-11:20:04] [ INFO ] - Matt_daemon: Socket created
-[11/02/2026-11:20:04] [ INFO ] - Matt_daemon: Socket bound to port 4242
-[11/02/2026-11:20:04] [ INFO ] - Matt_daemon: Server listening on port 4242
-[11/02/2026-11:20:04] [ INFO ] - Matt_daemon: Signal handling configured (signalfd)
-[11/02/2026-11:20:04] [ INFO ] - Matt_daemon: Server created.
-[11/02/2026-11:20:04] [ INFO ] - Matt_daemon: Standard FDs redirected to /dev/null
-[11/02/2026-11:20:04] [ INFO ] - Matt_daemon: Entering Daemon mode.
-[11/02/2026-11:20:04] [ INFO ] - Matt_daemon: started. PID: 12.
-[11/02/2026-11:20:04] [ INFO ] - Matt_daemon: Server running
-[11/02/2026-11:20:43] [ INFO ] - Matt_daemon: Client connected from 172.17.0.1:47874
-[11/02/2026-11:20:47] [ LOG ] - Matt_daemon: User input: Hello world
-[11/02/2026-11:21:13] [ INFO ] - Matt_daemon: Request quit.
-[11/02/2026-11:21:13] [ INFO ] - Matt_daemon: All clients disconnected
-[11/02/2026-11:21:13] [ INFO ] - Matt_daemon: Server stopped
-[11/02/2026-11:21:13] [ INFO ] - Matt_daemon: Lock file removed
-[11/02/2026-11:21:13] [ INFO ] - Matt_daemon: Quitting.
-```
+| Component | Purpose |
+|-----------|---------|
+| **TintinReporter** | Advanced logger with rotation, cleanup, 4 severity levels |
+| **MattDaemon** | Root verification, lock file (`flock`), lifecycle management |
+| **Server** | TCP socket (port 4242), `select()` I/O mux, `signalfd` signals |
+| **Daemonize** | Double fork, `setsid()`, working dir to `/`, FD → `/dev/null` |
+| **BenAfk** | Client orchestrator with signal handling and I/O multiplexing |
+| **Connection** | TCP connection wrapper (connect, send, disconnect) |
 
 ## System Files
 
 | Path | Purpose |
 |------|---------|
-| `/var/lock/matt_daemon.lock` | Lock file (single instance) |
-| `/var/log/matt_daemon/matt_daemon.log` | Log file |
+| `/var/lock/matt_daemon.lock` | Single-instance lock file |
+| `/var/log/matt_daemon/matt_daemon.log` | Current log |
+| `/var/log/matt_daemon/matt_daemon.log.*` | Rotated logs |
+
+## Logging
+
+**Format:** `[DD/MM/YYYY-HH:MM:SS] [ LEVEL ] - Matt_daemon: message`
+
+**Levels:** INFO (system events) | LOG (user input) | WARNING (non-critical) | ERROR (critical)
+
+**Sample:**
+```
+[11/02/2026-11:20:04] [ INFO ] - Matt_daemon: Started.
+[11/02/2026-11:20:04] [ INFO ] - Matt_daemon: started. PID: 12.
+[11/02/2026-11:20:43] [ INFO ] - Matt_daemon: Client connected from 172.17.0.1:47874
+[11/02/2026-11:20:47] [ LOG ] - Matt_daemon: User input: Hello world
+[11/02/2026-11:21:13] [ INFO ] - Matt_daemon: Request quit.
+```
+
+## Docker Usage
+
+```bash
+# Build
+docker build -t matt_daemon .
+
+# Run
+docker run -it --rm --name matt_test -p 4242:4242 matt_daemon bash
+./Matt_daemon
+
+# Connect from host
+nc localhost 4242
+```
+
+## Signals
+
+| Signal | Action | Catchable |
+|--------|--------|-----------|
+| SIGTERM (15) | Graceful shutdown | ✅ |
+| SIGINT (2) | Graceful shutdown | ✅ |
+| SIGQUIT (3) | Graceful shutdown | ✅ |
+| SIGHUP (1) | Graceful shutdown | ✅ |
+| SIGKILL (9) | Immediate kill | ❌ |
+| SIGSTOP (19) | Immediate pause | ❌ |
+
+## Project Structure
+
+```
+matt_daemon/
+├── Makefile
+├── README.md
+├── Dockerfile
+├── docs/
+│   ├── Extended-Commands-Reference.md    # Comprehensive testing guide
+│   └── Essential-Commands-Cheat-Sheet.md # Quick command reference
+├── server/
+│   ├── includes/
+│   │   ├── Daemonize.hpp
+│   │   ├── MattDaemon.hpp
+│   │   ├── Server.hpp
+│   │   └── TintinReporter.hpp
+│   └── src/
+│       ├── Daemonize.cpp
+│       ├── MattDaemon.cpp
+│       ├── Server.cpp
+│       ├── TintinReporter.cpp
+│       └── main.cpp
+└── client/
+    ├── includes/
+    │   ├── BenAfk.hpp
+    │   └── Connection.hpp
+    └── src/
+        ├── BenAfk.cpp
+        ├── Connection.cpp
+        └── main.cpp
+```
+
+## Documentation
+
+- **[Extended Commands Reference](docs/Extended-Commands-Reference.md)** - Complete Docker workflow, testing procedures, troubleshooting
+- **[Essential Commands Cheat Sheet](docs/Essential-Commands-Cheat-Sheet.md)** - Quick reference for common operations
+
+## Requirements
+
+- Linux kernel ≥ 3.14
+- C++20 compiler (g++, clang++)
+- Root privileges (UID 0)
+- POSIX system calls: `fork`, `setsid`, `flock`, `signalfd`, `select`
+
+## Technical Highlights
+
+- **Double Fork Pattern** - Ensures complete detachment from controlling terminal
+- **File Locking** - `flock(LOCK_EX | LOCK_NB)` for single-instance enforcement
+- **Signal FD** - Modern signal handling via `signalfd()` instead of traditional signal handlers
+- **I/O Multiplexing** - `select()` for concurrent client and signal monitoring
+- **Log Rotation** - Automatic size-based rotation with timestamp-based naming
+- **Clean Shutdown** - Proper resource cleanup, lock file removal, client disconnection
 
 ## Limitations
 
 - IPv4 only
 - No encryption (plain text)
 - No authentication
-- Maximum 3 simultaneous clients
-- Requires root
-
-## Project Structure
-
-```
-matt_daemon/
-├── Dockerfile
-├── Makefile
-├── README.md
-├── includes/
-│   ├── Config.hpp
-│   ├── Daemonize.hpp
-│   ├── MattDaemon.hpp
-│   ├── Server.hpp
-│   └── TintinReporter.hpp
-└── src/
-    ├── Daemonize.cpp
-    ├── MattDaemon.cpp
-    ├── Server.cpp
-    ├── TintinReporter.cpp
-    └── main.cpp
-```
+- Max 3 concurrent clients
+- Single-threaded (uses `select()` for concurrency)
