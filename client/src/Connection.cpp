@@ -13,21 +13,18 @@ Connection::Connection(const std::string& host, int port)
     , m_connected(false)
 {}
 
-Connection::~Connection()
-{
+Connection::~Connection() {
     if (m_socket >= 0)
         close(m_socket);
 }
 
-void Connection::createSocket()
-{
+void Connection::createSocket() {
     m_socket = socket(AF_INET, SOCK_STREAM, 0);
     if (m_socket < 0)
         throw std::runtime_error("socket() failed");
 }
 
-void Connection::connectTo()
-{
+void Connection::connectTo() {
     createSocket();
     
     struct sockaddr_in server_addr;
@@ -44,8 +41,7 @@ void Connection::connectTo()
     m_connected = true;
 }
 
-void Connection::disconnect()
-{
+void Connection::disconnect() {
     if (m_socket < 0)
         return;
     
@@ -54,8 +50,7 @@ void Connection::disconnect()
     m_connected = false;
 }
 
-void Connection::sendMsg(const std::string& message)
-{
+void Connection::sendMsg(const std::string& message) {
     if (!m_connected)
         throw std::runtime_error("Not connected");
     
@@ -63,7 +58,6 @@ void Connection::sendMsg(const std::string& message)
         throw std::runtime_error("send() failed");
 }
 
-int Connection::getSocketFd() const
-{
+int Connection::getSocketFd() const {
     return m_socket;
 }

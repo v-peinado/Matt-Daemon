@@ -11,29 +11,24 @@
 BenAfk::BenAfk(const BenAfk::Config& cfg)
     : m_connection(cfg.host, cfg.port)
     , m_signal_fd(-1)
-    , m_running(false)
-{    
+    , m_running(false) {    
 }
 
-BenAfk::~BenAfk()
-{
+BenAfk::~BenAfk() {
     if (m_signal_fd >= 0)
         close(m_signal_fd);
 }
 
-void BenAfk::init()
-{
+void BenAfk::init() {
     m_connection.connectTo();
     setupSignals();
 }
 
-void BenAfk::run()
-{
+void BenAfk::run() {
     mainLoop();
 }
 
-void BenAfk::setupSignals()
-{
+void BenAfk::setupSignals() {
     sigset_t mask;
     sigemptyset(&mask);
     sigaddset(&mask, SIGINT);
@@ -47,13 +42,11 @@ void BenAfk::setupSignals()
         throw std::runtime_error("signalfd() failed");
 }
 
-void BenAfk::mainLoop()
-{
+void BenAfk::mainLoop() {
     m_running = true;
     int socket_fd = m_connection.getSocketFd();
     
-    while (m_running)
-    {
+    while (m_running) {
         fd_set read_fds;
         setupFdSet(read_fds, socket_fd);
         
@@ -63,8 +56,9 @@ void BenAfk::mainLoop()
         
         int activity = select(getMaxFd(socket_fd) + 1, &read_fds, nullptr, nullptr, &timeout);
         
-        if (activity < 0)
-        {
+        if (activity < 0) {
+            if (errno == EINTR)
+                continue;
             if (m_running)
                 std::cerr << "select() error" << std::endl;
             break;
@@ -73,20 +67,17 @@ void BenAfk::mainLoop()
         if (activity == 0)
             continue;
         
-        if (FD_ISSET(m_signal_fd, &read_fds))
-        {
+        if (FD_ISSET(m_signal_fd, &read_fds)) {
             handleSignal();
             continue;
         }
         
-        if (FD_ISSET(socket_fd, &read_fds))
-        {
+        if (FD_ISSET(socket_fd, &read_fds)) {
             if (!checkServerConnection(socket_fd))
                 break;
         }
         
-        if (FD_ISSET(STDIN_FILENO, &read_fds))
-        {
+        if (FD_ISSET(STDIN_FILENO, &read_fds)) {
             handleUserInput();
         }
     }
@@ -94,19 +85,16 @@ void BenAfk::mainLoop()
     m_connection.disconnect();
 }
 
-void BenAfk::handleSignal()
-{
+void BenAfk::handleSignal() {
     struct signalfd_siginfo siginfo;
     if (read(m_signal_fd, &siginfo, sizeof(siginfo)) == sizeof(siginfo))
         m_running = false;
 }
 
-void BenAfk::handleUserInput()
-{
+void BenAfk::handleUserInput() {
     std::string line;
     
-    if (!std::getline(std::cin, line))
-    {
+    if (!std::getline(std::cin, line)) {
         m_running = false;
         return;
     }

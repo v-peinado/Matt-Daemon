@@ -15,25 +15,21 @@ MattDaemon::MattDaemon(const Config& cfg, const Server::Config& srv_cfg, TintinR
     , m_logger(logger)
     , m_server(srv_cfg, logger)
     , m_lock_fd(-1)
-    , m_initialized(false)
-{
+    , m_initialized(false) {
     createLockFile();
 }
 
-MattDaemon::~MattDaemon()
-{
+MattDaemon::~MattDaemon() {
     removeLockFile();
     
-    if (m_initialized)
-    {
+    if (m_initialized) {
         m_logger.log(TintinReporter::LogLevel::Info, "Quitting.");
     }
 }
 
 // MattDaemon - Initialization
 
-void MattDaemon::init()
-{
+void MattDaemon::init() {
     m_logger.log(TintinReporter::LogLevel::Info, "Started.");
 
     m_server.init();
@@ -41,8 +37,7 @@ void MattDaemon::init()
     m_initialized = true;
 }
 
-void MattDaemon::run()
-{
+void MattDaemon::run() {
     if (!m_initialized)
         throw std::runtime_error("Cannot run: not initialized");
     
@@ -53,23 +48,19 @@ void MattDaemon::run()
     m_server.run();
 }
 
-void MattDaemon::createLockFile()  
-{
+void MattDaemon::createLockFile() {
     // Try to open/create lock file
     m_lock_fd = open(m_lock_file.c_str(), O_CREAT | O_RDWR, 0644);
     
-    if (m_lock_fd < 0)
-    {
+    if (m_lock_fd < 0) {
         m_logger.log(TintinReporter::LogLevel::Error, "Cannot open lock file: " + std::string(strerror(errno)));
         throw std::runtime_error("Cannot open lock file");
     }
     
     // Try to acquire exclusive lock
-    if (flock(m_lock_fd, LOCK_EX | LOCK_NB) < 0)
-    {
+    if (flock(m_lock_fd, LOCK_EX | LOCK_NB) < 0) {
         // Lock failed - another instance is running
-        if (errno == EWOULDBLOCK)
-        {
+        if (errno == EWOULDBLOCK) {
             std::cerr << "Error: Another instance is already running" << std::endl;
             std::cerr << "Can't open :" << m_lock_file << std::endl;
 
@@ -92,10 +83,8 @@ void MattDaemon::createLockFile()
     m_logger.log(TintinReporter::LogLevel::Info, "Lock file created: " + m_lock_file);
 }
 
-void MattDaemon::removeLockFile()
-{
-    if (m_lock_fd >= 0)
-    {
+void MattDaemon::removeLockFile() {
+    if (m_lock_fd >= 0) {
         flock(m_lock_fd, LOCK_UN);
         close(m_lock_fd);
         m_lock_fd = -1;

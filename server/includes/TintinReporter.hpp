@@ -5,12 +5,10 @@
 #include <string_view>
 #include <vector>
 
-class TintinReporter
-{
+class TintinReporter {
     public:
 
-        struct Config
-        {
+        struct Config {
             std::string log_file = "/var/log/tintin.log";
             std::string application_name = "Application";
             std::size_t max_size = 10 * 1024 * 1024;
@@ -26,8 +24,7 @@ class TintinReporter
         TintinReporter& operator=(TintinReporter&&) = delete;
         ~TintinReporter() = default;
 
-        enum class LogLevel
-        {
+        enum class LogLevel {
             Info,           // System lifecycle events
             Log,            // User input, except "quit"
             Warning,        // Non-critical issues

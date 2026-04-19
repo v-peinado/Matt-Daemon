@@ -2,12 +2,10 @@
 #include "TintinReporter.hpp"
 #include "Server.hpp"
 
-class MattDaemon
-{
+class MattDaemon {
     public:
 
-        struct Config
-        {
+        struct Config {
             std::string lock_file = "/var/lock/daemon.lock";
         };
 

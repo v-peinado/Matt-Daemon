@@ -6,12 +6,10 @@
 
 class TintinReporter;
 
-class Server
-{
+class Server {
     public:
 
-        struct Config 
-        {
+        struct Config {
             int port = 4242;
             int max_clients = 10;
             int buffer_size = 1024;

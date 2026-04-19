@@ -3,12 +3,10 @@
 #include <csignal>
 #include <string>
 
-class BenAfk
-{
+class BenAfk {
     public:
 
-        struct Config 
-        {
+        struct Config  {
             std::string host = "127.0.0.1";
             int port = 4242;
         };

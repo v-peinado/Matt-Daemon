@@ -19,22 +19,18 @@ Server::Server(const Config& cfg, TintinReporter& logger)
     , m_server_fd(-1)
     , m_signal_fd(-1)
     , m_logger(logger)
-    , m_running(false)
-{
+    , m_running(false) {
     m_logger.log(TintinReporter::LogLevel::Info, "Server object created");
 }
 
-Server::~Server()
-{
+Server::~Server() {
     stop();
-    if (m_signal_fd >= 0)
-    {
+    if (m_signal_fd >= 0) {
         close(m_signal_fd);
         m_logger.log(TintinReporter::LogLevel::Info, "Signal fd closed");
     }
 
-    if (m_server_fd >= 0)
-    {
+    if (m_server_fd >= 0) {
         close(m_server_fd);
         m_logger.log(TintinReporter::LogLevel::Info, "Server closed");
     }
@@ -42,8 +38,7 @@ Server::~Server()
 
 // Server - Initialization 
 
-void Server::init()
-{
+void Server::init() {
     m_logger.log(TintinReporter::LogLevel::Info, "Creating server...");
     createSocket();
     bindSocket();
@@ -52,8 +47,7 @@ void Server::init()
     m_logger.log(TintinReporter::LogLevel::Info, "Server created.");
 }
 
-void Server::createSocket()
-{
+void Server::createSocket() {
     m_server_fd = socket(AF_INET, SOCK_STREAM, 0);
     
     if (m_server_fd < 0)
@@ -66,16 +60,14 @@ void Server::createSocket()
     m_logger.log(TintinReporter::LogLevel::Info, "Socket created");
 }
 
-void Server::bindSocket()
-{
+void Server::bindSocket() {
     struct sockaddr_in server_addr;
     std::memset(&server_addr, 0, sizeof(server_addr));
     server_addr.sin_family = AF_INET;
     server_addr.sin_addr.s_addr = INADDR_ANY;
     server_addr.sin_port = htons(m_port);
 
-    if (bind(m_server_fd, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0)
-    {
+    if (bind(m_server_fd, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
         close(m_server_fd);
         m_server_fd = -1;
         throw std::runtime_error("bind() failed: " + std::string(strerror(errno)));
@@ -84,10 +76,8 @@ void Server::bindSocket()
     m_logger.log(TintinReporter::LogLevel::Info, "Socket bound to port " + std::to_string(m_port));
 }
 
-void Server::listenSocket()
-{
-    if (listen(m_server_fd, 5) < 0)
-    {
+void Server::listenSocket() {
+    if (listen(m_server_fd, 5) < 0) {
         close(m_server_fd);
         m_server_fd = -1;
         throw std::runtime_error("listen() failed: " + std::string(strerror(errno)));
@@ -96,8 +86,7 @@ void Server::listenSocket()
     m_logger.log(TintinReporter::LogLevel::Info, "Server listening on port " + std::to_string(m_port));
 }
 
-void Server::setupSignals()
-{
+void Server::setupSignals() {
     sigset_t mask;
     sigemptyset(&mask);             // Init signal set
 
@@ -123,10 +112,8 @@ void Server::setupSignals()
 
 // Signal handler
 
-std::string_view Server::getSignalName(int signum)
-{
-    switch (signum)
-    {
+std::string_view Server::getSignalName(int signum) {
+    switch (signum) {
         case SIGTERM:   return "SIGTERM";
         case SIGINT:    return "SIGINT";
         case SIGQUIT:   return "SIGQUIT";
@@ -135,12 +122,10 @@ std::string_view Server::getSignalName(int signum)
     }
 }
 
-void Server::handleSignal()
-{
+void Server::handleSignal() {
     struct signalfd_siginfo siginfo; 
     ssize_t bytes = read(m_signal_fd, &siginfo, sizeof(siginfo));
-    if (bytes != sizeof(siginfo))
-    {
+    if (bytes != sizeof(siginfo)) {
         m_logger.log(TintinReporter::LogLevel::Error, "Failed to read signal info");
         return;
     }
@@ -156,23 +141,20 @@ void Server::handleSignal()
 
 // Server main loop
 
-void Server::run()
-{
+void Server::run() {
     m_running = true;
     m_logger.log(TintinReporter::LogLevel::Info, "Server running");
     
-    while (m_running)
-    {
+    while (m_running) {
         setupFdSet();
         struct timeval timeout;
         timeout.tv_sec = 1;
         timeout.tv_usec = 0; 
         int activity = select(getMaxFd() + 1, &m_read_fds, nullptr, nullptr, &timeout);
 
-        if (activity < 0)
-        {
-            if (errno == EINTR)
-                continue;
+        if (activity < 0) {
+            if (errno == EINTR) // syscall interrupted by a signal; not an error, retry the call safely
+                continue;       // otherwise the server could stop unexpectedly due to harmless signals
             
             throw std::runtime_error("select() failed: " + std::string(strerror(errno)));
             break;
@@ -181,8 +163,7 @@ void Server::run()
         if (activity == 0)
             continue;
 
-        if (FD_ISSET(m_signal_fd, &m_read_fds))
-        {
+        if (FD_ISSET(m_signal_fd, &m_read_fds)) {
             handleSignal();
             continue;
         }
@@ -190,8 +171,7 @@ void Server::run()
         if (FD_ISSET(m_server_fd, &m_read_fds))
             acceptNewClient();
 
-        for (size_t i = 0; i < m_client_fds.size(); )
-        {
+        for (size_t i = 0; i < m_client_fds.size(); ) {
             int clientFd = m_client_fds[i];
             if (FD_ISSET(clientFd, &m_read_fds))
                 handleClientData(clientFd);
@@ -202,8 +182,7 @@ void Server::run()
     m_logger.log(TintinReporter::LogLevel::Info, "Server stopped");
 }
 
-void Server::stop()
-{
+void Server::stop() {
     if (!m_running)
         return;
 
@@ -216,17 +195,14 @@ void Server::stop()
     m_logger.log(TintinReporter::LogLevel::Info, "All clients disconnected");
 }
 
-bool Server::isRunning() const
-{
+bool Server::isRunning() const {
     return m_running;
 }
 
 // Client management
 
-void Server::acceptNewClient()
-{
-    if (!canAcceptClient())
-    {
+void Server::acceptNewClient() {
+    if (!canAcceptClient()) {
         m_logger.log(TintinReporter::LogLevel::Warning, "Maximum clients reached, rejecting connection");
         int clientFd = accept(m_server_fd, NULL, NULL);
         if (clientFd >= 0)
@@ -244,13 +220,11 @@ void Server::acceptNewClient()
     m_logger.log(TintinReporter::LogLevel::Info, "Client connected from " + std::string(inet_ntoa(clientAddr.sin_addr)) + ":" + std::to_string(ntohs(clientAddr.sin_port)));
 }
 
-void Server::handleClientData(int clientFd)
-{
+void Server::handleClientData(int clientFd) {
     std::vector<char> buffer(m_buffer_size);
     ssize_t bytesRead = recv(clientFd, buffer.data(), buffer.size() - 1, 0);
     
-    if (bytesRead <= 0)
-    {
+    if (bytesRead <= 0) {
         if (bytesRead == 0)
             m_logger.log(TintinReporter::LogLevel::Info, "Client disconnected");
         else
@@ -267,12 +241,9 @@ void Server::handleClientData(int clientFd)
     processMessage(clientFd, message);
 }
 
-void Server::disconnectClient(int clientFd)
-{
-    for (size_t i = 0; i < m_client_fds.size(); i++)
-    {
-        if (m_client_fds[i] == clientFd)
-        {
+void Server::disconnectClient(int clientFd) {
+    for (size_t i = 0; i < m_client_fds.size(); i++) {
+        if (m_client_fds[i] == clientFd) {
             close(clientFd);
             m_client_fds.erase(m_client_fds.begin() + i);
             m_logger.log(TintinReporter::LogLevel::Info, "Client removed from list");
@@ -281,18 +252,15 @@ void Server::disconnectClient(int clientFd)
     }
 }
 
-bool Server::canAcceptClient() const
-{
+bool Server::canAcceptClient() const {
     return m_client_fds.size() < static_cast<size_t>(m_max_clients);
 }
 // Message processing
 
-void Server::processMessage(int clientFd, const std::string& message)
-{
+void Server::processMessage(int clientFd, const std::string& message) {
     (void)clientFd;
 
-    if (message == "quit")
-    {
+    if (message == "quit") {
         m_logger.log(TintinReporter::LogLevel::Info, "Request quit.");
         stop();
     }
@@ -302,20 +270,17 @@ void Server::processMessage(int clientFd, const std::string& message)
 
 // Helper functions 
 
-int Server::getMaxFd() const
-{
+int Server::getMaxFd() const {
     int maxFd = std::max(m_server_fd, m_signal_fd);
 
-    for (size_t i = 0; i < m_client_fds.size(); i++)
-    {
+    for (size_t i = 0; i < m_client_fds.size(); i++) {
         if (m_client_fds[i] > maxFd)
             maxFd = m_client_fds[i];
     }
     return maxFd;
 }
 
-void Server::setupFdSet()
-{
+void Server::setupFdSet() {
     FD_ZERO(&m_read_fds);
     FD_SET(m_server_fd, &m_read_fds);
 

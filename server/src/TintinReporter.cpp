@@ -15,21 +15,18 @@ TintinReporter::TintinReporter(const Config& cfg)
     , m_application_name(cfg.application_name)
     , m_max_size(cfg.max_size)
     , m_max_age_days(cfg.max_age_days)
-    , m_compress_after_days(cfg.compress_after_days)
-{
-    createLogDirectory();
+    , m_compress_after_days(cfg.compress_after_days) {
+        createLogDirectory();
 
-    m_file.open(m_log_file, std::ios::out | std::ios::app);
-    if (!m_file.is_open())
-    {
-        throw std::runtime_error("Cannot open log file: " + m_log_file);
-    }
+        m_file.open(m_log_file, std::ios::out | std::ios::app);
+        if (!m_file.is_open()) {
+            throw std::runtime_error("Cannot open log file: " + m_log_file);
+        }
 }
 
 // TintinReporter - Public methods     
 
-void TintinReporter::log(LogLevel level, std::string_view msg)
-{
+void TintinReporter::log(LogLevel level, std::string_view msg) {
     checkAndRotate();
     
     if (!m_file.is_open())
@@ -44,15 +41,13 @@ void TintinReporter::log(LogLevel level, std::string_view msg)
             << msg << std::endl;
 }
 
-bool TintinReporter::isOpen() const
-{
+bool TintinReporter::isOpen() const {
     return(m_file.is_open());
 }
 
 // TintinReporter - Private methods
 
-std::string TintinReporter::getCurrentTime() const
-{
+std::string TintinReporter::getCurrentTime() const {
     auto system_time = std::chrono::system_clock::now();
     std::time_t time_now = std::chrono::system_clock::to_time_t(system_time);
 
@@ -65,13 +60,11 @@ std::string TintinReporter::getCurrentTime() const
     return std::string(buffer);
 }
 
-std::string_view TintinReporter::levelToString(LogLevel level) const
-{
+std::string_view TintinReporter::levelToString(LogLevel level) const {
     return m_lvl_names[static_cast<int>(level)];
 }
 
-void TintinReporter::createLogDirectory()
-{
+void TintinReporter::createLogDirectory() {
     size_t last_slash = m_log_file.find_last_of("/\\");
     if (last_slash == std::string::npos)
         return;
@@ -86,31 +79,25 @@ void TintinReporter::createLogDirectory()
 
 // Advanced Log Archival
 
-void TintinReporter::checkAndRotate()
-{
-    if (shouldRotate())
-    {
+void TintinReporter::checkAndRotate() {
+    if (shouldRotate()) {
         rotateLogFile();
         cleanOldLogs();
     }
 }
 
-bool TintinReporter::shouldRotate() const
-{
+bool TintinReporter::shouldRotate() const {
     return getFileSize(m_log_file) >= m_max_size;
 }
 
-void TintinReporter::rotateLogFile()
-{
-    if (m_file.is_open())
-    {
+void TintinReporter::rotateLogFile() {
+    if (m_file.is_open()) {
         m_file.close();
     }
     
     std::string rotated_name = getRotatedFilename();
     
-    if (rename(m_log_file.c_str(), rotated_name.c_str()) != 0)
-    {
+    if (rename(m_log_file.c_str(), rotated_name.c_str()) != 0) {
         m_file.open(m_log_file, std::ios::out | std::ios::app);
         return;
     }
@@ -118,8 +105,7 @@ void TintinReporter::rotateLogFile()
     m_file.open(m_log_file, std::ios::out | std::ios::app);
 }
 
-std::string TintinReporter::getRotatedFilename() const
-{
+std::string TintinReporter::getRotatedFilename() const {
     auto now = std::chrono::system_clock::now();
     std::time_t time_now = std::chrono::system_clock::to_time_t(now);
     std::tm tm_now;
@@ -131,21 +117,17 @@ std::string TintinReporter::getRotatedFilename() const
     return m_log_file + "." + timestamp;
 }
 
-void TintinReporter::cleanOldLogs()
-{
+void TintinReporter::cleanOldLogs() {
     auto files = findLogFiles();
     
-    for (const auto& file : files)
-    {
-        if (getFileAgeDays(file) > m_max_age_days)
-        {
+    for (const auto& file : files) {
+        if (getFileAgeDays(file) > m_max_age_days) {
             unlink(file.c_str());
         }
     }
 }
 
-std::vector<std::string> TintinReporter::findLogFiles() const
-{
+std::vector<std::string> TintinReporter::findLogFiles() const {
     std::vector<std::string> files;
     
     size_t last_slash = m_log_file.find_last_of("/\\");
@@ -162,11 +144,9 @@ std::vector<std::string> TintinReporter::findLogFiles() const
         return files;
     
     struct dirent* entry;
-    while ((entry = readdir(dir)) != nullptr)
-    {
+    while ((entry = readdir(dir)) != nullptr) {
         std::string filename = entry->d_name;
-        if (filename.find(base_name) == 0)
-        {
+        if (filename.find(base_name) == 0) {
             files.push_back(dir_path + "/" + filename);
         }
     }
@@ -175,16 +155,14 @@ std::vector<std::string> TintinReporter::findLogFiles() const
     return files;
 }
 
-std::size_t TintinReporter::getFileSize(const std::string& filepath) const
-{
+std::size_t TintinReporter::getFileSize(const std::string& filepath) const {
     struct stat st;
     if (stat(filepath.c_str(), &st) != 0)
         return 0;
     return static_cast<std::size_t>(st.st_size);
 }
 
-int TintinReporter::getFileAgeDays(const std::string& filepath) const
-{
+int TintinReporter::getFileAgeDays(const std::string& filepath) const {
     struct stat st;
     if (stat(filepath.c_str(), &st) != 0)
         return 0;

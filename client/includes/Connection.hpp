@@ -1,8 +1,7 @@
 #pragma once
 #include <string>
 
-class Connection
-{
+class Connection {
     public:
 
         Connection(const std::string& host, int port);
