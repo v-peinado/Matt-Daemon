@@ -93,44 +93,35 @@ void BenAfk::handleSignal() {
 
 void BenAfk::handleUserInput() {
     std::string line;
-    
+
     if (!std::getline(std::cin, line)) {
         m_running = false;
         return;
     }
-    
+
     if (line.empty())
         return;
-    
-    try {
-        m_connection.sendMsg(line);
-    }
-    catch (const std::exception&) {
-        m_running = false;
-    }
+
+    m_connection.sendMsg(line);
 }
 
-bool BenAfk::checkServerConnection(int socket_fd)
-{
+bool BenAfk::checkServerConnection(int socket_fd) {
     char buf[1];
-    if (recv(socket_fd, buf, sizeof(buf), MSG_PEEK) == 0)
-    {
+    if (recv(socket_fd, buf, sizeof(buf), MSG_PEEK) == 0) {
         std::cout << "\nServer closed connection" << std::endl;
         return false;
     }
     return true;
 }
 
-void BenAfk::setupFdSet(fd_set& read_fds, int socket_fd)
-{
+void BenAfk::setupFdSet(fd_set& read_fds, int socket_fd) {
     FD_ZERO(&read_fds);
     FD_SET(STDIN_FILENO, &read_fds);
     FD_SET(socket_fd, &read_fds);
     FD_SET(m_signal_fd, &read_fds);
 }
 
-int BenAfk::getMaxFd(int socket_fd) const
-{
+int BenAfk::getMaxFd(int socket_fd) const {
     int max_fd = socket_fd;
     if (m_signal_fd > max_fd)
         max_fd = m_signal_fd;
