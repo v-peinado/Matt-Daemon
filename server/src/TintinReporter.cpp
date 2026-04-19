@@ -26,7 +26,9 @@ TintinReporter::TintinReporter(const Config& cfg)
 
 // TintinReporter - Public methods     
 
-void TintinReporter::log(LogLevel level, std::string_view msg) {
+// TO DO: In the future, extend this to support prefix + msg (e.g. log(level, prefix, msg))
+// to avoid temporary string concatenations and improve performance when logging composed messages.
+void TintinReporter::log(LogLevel level, std::string_view msg) { // Next
     checkAndRotate();
     
     if (!m_file.is_open())
