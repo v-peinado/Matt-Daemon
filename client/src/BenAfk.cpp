@@ -107,7 +107,7 @@ void BenAfk::handleUserInput() {
 
 bool BenAfk::checkServerConnection(int socket_fd) {
     char buf[1];
-    if (recv(socket_fd, buf, sizeof(buf), MSG_PEEK) == 0) {
+    if (recv(socket_fd, buf, sizeof(buf), MSG_PEEK) == 0) {      // Dont recv msg, only use for recv == 0, server disconnect
         std::cout << "\nServer closed connection" << std::endl;
         return false;
     }

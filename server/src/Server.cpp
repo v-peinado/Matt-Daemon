@@ -48,11 +48,13 @@ void Server::init() {
 }
 
 void Server::createSocket() {
+    // Create IPv4, TCP socket
     m_server_fd = socket(AF_INET, SOCK_STREAM, 0);
     
     if (m_server_fd < 0)
         throw std::runtime_error("socket() failed: " + std::string(strerror(errno)));
     
+    // Allow immediate reuse of address after restart
     int opt = 1;
     if (setsockopt(m_server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0)
         m_logger.log(TintinReporter::LogLevel::Warning, "setsockopt(SO_REUSEADDR) failed");
@@ -61,12 +63,14 @@ void Server::createSocket() {
 }
 
 void Server::bindSocket() {
+    // IPv4 server address: all interfaces + configured port
     struct sockaddr_in server_addr;
     std::memset(&server_addr, 0, sizeof(server_addr));
-    server_addr.sin_family = AF_INET;
+    server_addr.sin_family = AF_INET;            
     server_addr.sin_addr.s_addr = INADDR_ANY;
     server_addr.sin_port = htons(m_port);
 
+    // Bind socket to local address, cast to generic sockaddr(not IPv4 or IPv6)
     if (bind(m_server_fd, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
         close(m_server_fd);
         m_server_fd = -1;
@@ -222,10 +226,10 @@ void Server::acceptNewClient() {
 
 void Server::handleClientData(int clientFd) {
     std::vector<char> buffer(m_buffer_size);
-    ssize_t bytesRead = recv(clientFd, buffer.data(), buffer.size() - 1, 0);
+    ssize_t bytesRead = recv(clientFd, buffer.data(), buffer.size(), 0); // size -1 not need extra space for(\0) for string construction (line 236)
     
     if (bytesRead <= 0) {
-        if (bytesRead == 0)
+        if (bytesRead == 0)  // recv() returns 0 when the peer has closed the connection  
             m_logger.log(TintinReporter::LogLevel::Info, "Client disconnected");
         else
             m_logger.log(TintinReporter::LogLevel::Error, "recv() failed: " + std::string(strerror(errno)));
@@ -233,9 +237,10 @@ void Server::handleClientData(int clientFd) {
         return;
     }
 
-    std::string message(buffer.data(), bytesRead);
+    std::string message(buffer.data(), bytesRead);  // std::string can be constructed with a pointer and length,
+                                                    // so it copies exactly bytesRead bytes without needing null-termination.
 
-    while (!message.empty() && (message.back() == '\n' || message.back() == '\r'))  // Win and telnet too
+    while (!message.empty() && (message.back() == '\n' || message.back() == '\r'))  // remove newline/carriage for string comparisons(e.g quit == message)
         message.pop_back();
 
     processMessage(clientFd, message);
