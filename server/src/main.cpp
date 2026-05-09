@@ -10,18 +10,13 @@ int main()
     try {
         Daemonize::requireRoot();
         
-        // Configuraciones de Matt_daemon
         TintinReporter::Config logger_config {
             .log_file = "/var/log/matt_daemon/matt_daemon.log",
             .application_name = "Matt_daemon",
-            .max_size = 10 * 1024 * 1024,
-            .max_age_days = 30,
         };
         
         Server::Config server_config {
-            .port = 4242,
             .max_clients = 3,
-            .buffer_size = 1024
         };
         
         MattDaemon::Config daemon_config {

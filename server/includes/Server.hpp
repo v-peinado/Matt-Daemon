@@ -17,7 +17,6 @@ class Server {
 
         Server() = delete;
         Server(const Config& cfg, TintinReporter& logger);
-        Server(int port, TintinReporter& logger);
         Server(const Server&) = delete;
         Server& operator=(const Server&) = delete;
         Server(Server&&) = delete;

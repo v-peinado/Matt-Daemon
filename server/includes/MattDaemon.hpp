@@ -10,7 +10,6 @@ class MattDaemon {
         };
 
         MattDaemon(const Config& cfg, const Server::Config& srv_cfg, TintinReporter& logger);
-
         MattDaemon() = delete;
         MattDaemon(const MattDaemon&) = delete;
         MattDaemon& operator=(const MattDaemon&) = delete;
