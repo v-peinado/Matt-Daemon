@@ -11,7 +11,8 @@ int main()
         Daemonize::requireRoot();
         
         TintinReporter::Config logger_config {
-            .log_file = "/var/log/matt_daemon/matt_daemon.log",
+            .log_dir = "/var/log/matt_daemon",
+            .log_file = "matt_daemon.log",
             .application_name = "Matt_daemon",
         };
         

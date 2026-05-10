@@ -4,16 +4,17 @@
 #include <array>
 #include <string_view>
 #include <vector>
+#include <filesystem>
 
 class TintinReporter {
     public:
 
         struct Config {
-            std::string log_file = "/var/log/tintin.log";
+            std::filesystem::path log_dir = "/var/log/tintin";
+            std::filesystem::path log_file = "tintin.log";
             std::string application_name = "Application";
-            std::size_t max_size = 10 * 1024 * 1024;
+            std::size_t max_size = 10 * 1024 * 1024; // 10mb
             int max_age_days = 30;
-            int compress_after_days = 1;
         };
 
         TintinReporter(const Config& cfg);
@@ -31,22 +32,22 @@ class TintinReporter {
             Error           // Critical errors
         };
 
-        void log(LogLevel level, std::string_view msg);
+        void log(LogLevel level, const std::string& msg);
         [[nodiscard]] bool isOpen() const;
 
     private:
 
-        std::string     m_log_file;
-        std::string     m_application_name;
-        std::size_t     m_max_size;
-        int             m_max_age_days;
-        int             m_compress_after_days;
-        std::ofstream   m_file;
+        std::filesystem::path   m_log_dir;
+        std::filesystem::path   m_log_file;
+        std::string             m_application_name;
+        std::size_t             m_max_size;
+        int                     m_max_age_days;
+        std::ofstream           m_file;
 
-        static constexpr std::array<std::string_view, 4> m_lvl_names {"[ INFO ]", "[ LOG ]", "[ WARNING ]", "[ ERROR ]"};
+        static constexpr std::array<const char*, 4> m_lvl_names {"[ INFO ]", "[ LOG ]", "[ WARNING ]", "[ ERROR ]"};
 
         std::string getCurrentTime() const;
-        std::string_view levelToString(LogLevel level) const;
+        std::string levelToString(LogLevel level) const;
         void createLogDirectory();
 
         // Advanced Log Archival
