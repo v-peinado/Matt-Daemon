@@ -48,7 +48,6 @@ class TintinReporter {
 
         std::string getCurrentTime() const;
         std::string levelToString(LogLevel level) const;
-        void createLogDirectory();
 
         // Advanced Log Archival
         void checkAndRotate();
