@@ -1,10 +1,7 @@
 #include "TintinReporter.hpp"
 #include <ctime>
 #include <chrono>
-#include <unistd.h>
-#include <sys/stat.h>
 #include <stdexcept>
-#include <dirent.h>
 #include <vector>
 #include <fstream>
 #include <filesystem>
@@ -78,7 +75,7 @@ void TintinReporter::checkAndRotate() {
 }
 
 bool TintinReporter::shouldRotate() const {
-    return getFileSize(m_log_file) >= m_max_size;
+    return getFileSize(m_log_dir / m_log_file) >= m_max_size;
 }
 
 void TintinReporter::rotateLogFile() {

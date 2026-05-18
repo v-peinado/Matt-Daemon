@@ -10,7 +10,8 @@ test/
 *.obj
 *.so
 *.a
-*.exe
+Matt_daemon
+
 # IDE
 .vscode/
 .idea/
