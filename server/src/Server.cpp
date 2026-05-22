@@ -226,7 +226,7 @@ void Server::acceptNewClient() {
 
 void Server::handleClientData(int clientFd) {
     std::vector<char> buffer(m_buffer_size);
-    ssize_t bytesRead = recv(clientFd, buffer.data(), buffer.size(), 0); // size -1 not need extra space for(\0) for string construction (line 236)
+    ssize_t bytesRead = recv(clientFd, buffer.data(), buffer.size(), 0); // size -1 not need extra space for(\0) for string constructio
     
     if (bytesRead <= 0) {
         if (bytesRead == 0)  // recv() returns 0 when the peer has closed the connection  
